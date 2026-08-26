@@ -6,29 +6,21 @@
 <title>JI Open PO Reconciliation</title>
 <style>
 :root{
-  --ink:#0b0e13; --ink2:#333d47; --mut:#6b7787; --line:#e5e9ef; --bg:#ffffff;
-  --card:#ffffff; --brand:#12adf0; --brand2:#0e93cc; --ok:#127a3d; --okbg:#e6f4ea;
-  --warn:#8a4b00; --warnbg:#fdf0dc; --bad:#a11d1d; --badbg:#fbe3e3; --grey:#f2f5f8;
-  --ji-black:#0b0e13;
+  --ink:#141a21; --ink2:#3d4855; --mut:#6b7787; --line:#e2e6ec; --bg:#f5f7fa;
+  --card:#ffffff; --brand:#1f4e79; --brand2:#2c6ba3; --ok:#127a3d; --okbg:#e6f4ea;
+  --warn:#8a4b00; --warnbg:#fdf0dc; --bad:#a11d1d; --badbg:#fbe3e3; --grey:#eef1f5;
 }
 @media (prefers-color-scheme: dark){
   :root{--ink:#e9edf2;--ink2:#c2cbd6;--mut:#8e9aa8;--line:#2a323c;--bg:#12171d;
-        --card:#1a2027;--brand:#12adf0;--brand2:#3fc0f7;--ok:#7fd6a0;--okbg:#16301f;
-        --warn:#f0be7a;--warnbg:#33260f;--bad:#f09b9b;--badbg:#331717;--grey:#222933;
-        --ji-black:#e9edf2;}
+        --card:#1a2027;--brand:#7fb3e0;--brand2:#5d97cc;--ok:#7fd6a0;--okbg:#16301f;
+        --warn:#f0be7a;--warnbg:#33260f;--bad:#f09b9b;--badbg:#331717;--grey:#222933;}
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);
   font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
-.wrap{max-width:1080px;margin:0 auto;padding:0 22px 80px}
-.topbar{display:flex;align-items:center;gap:12px;padding:18px 0;border-bottom:1px solid var(--line);margin-bottom:26px}
-.topbar .logo{width:38px;height:38px;border-radius:11px;background:var(--brand);
-  transform:rotate(45deg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.topbar .logo span{transform:rotate(-45deg);color:#fff;font-weight:800;font-size:17px;font-family:Georgia,serif}
-.topbar .name{font-weight:700;font-size:15.5px;color:var(--ji-black);letter-spacing:-.01em}
-.topbar .name small{display:block;font-weight:500;font-size:10.5px;color:var(--mut);letter-spacing:.04em}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 22px 80px}
 header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:4px}
-h1{font-size:26px;margin:0;letter-spacing:-.02em;color:var(--brand);font-weight:800}
+h1{font-size:23px;margin:0;letter-spacing:-.02em}
 .sub{color:var(--mut);font-size:13.5px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
   padding:20px 22px;margin-top:18px}
@@ -52,9 +44,9 @@ select{font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);
 .pill.warn{background:var(--warnbg);color:var(--warn)}
 .pill.bad{background:var(--badbg);color:var(--bad)}
 .pill.grey{background:var(--grey);color:var(--mut)}
-button{font:inherit;font-weight:600;border:0;border-radius:99px;padding:11px 24px;cursor:pointer;
-  background:var(--ji-black);color:#fff;transition:.15s}
-button:hover:not(:disabled){background:var(--brand);color:#fff}
+button{font:inherit;font-weight:600;border:0;border-radius:9px;padding:11px 22px;cursor:pointer;
+  background:var(--brand);color:#fff;transition:.15s}
+button:hover:not(:disabled){background:var(--brand2)}
 button:disabled{opacity:.4;cursor:not-allowed}
 button.ghost{background:transparent;color:var(--mut);border:1px solid var(--line);font-weight:500}
 .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
@@ -85,10 +77,6 @@ a{color:var(--brand)}
 </head>
 <body>
 <div class="wrap">
-<div class="topbar">
-  <div class="logo"><span>J</span></div>
-  <div class="name">Jaisingh Innovations<small>SALES · OPEN PO RECONCILIATION</small></div>
-</div>
 <header>
   <h1>Open PO Reconciliation</h1>
   <div class="sub">Jaisingh Innovations &middot; runs entirely in this browser, no data leaves the machine</div>
@@ -638,7 +626,6 @@ function reconcile(input, opts) {
   if (input.havells)    lines = lines.concat(normHavells(input.havells));
   if (input.sig_indoor) lines = lines.concat(normSignify(input.sig_indoor, 'sig indoor'));
   if (input.sig_out)    lines = lines.concat(normSignify(input.sig_out, 'sig out'));
-  if (input.wipro)      lines = lines.concat(normWipro(input.wipro));
   (input.extra || []).forEach(x => {
     lines = lines.concat(x.type === 'havells' ? normHavells(x.rows) : normSignify(x.rows, x.name));
   });
@@ -1226,14 +1213,87 @@ function refine(type, fileName, sheetName){
   return type;
 }
 /* if the same role turns up twice, keep the bigger sheet and flag the other */
+// Create a fingerprint from the actual sheet data
+function sheetFingerprint(rows) {
+  if (!rows || !rows.length) return '';
+
+  const headers = Object.keys(rows[0] || {})
+    .map(k => String(k).trim().toLowerCase())
+    .sort();
+
+  const data = rows.map(row => {
+    return headers.map(header => {
+
+      const originalKey = Object.keys(row).find(
+        k => String(k).trim().toLowerCase() === header
+      );
+
+      return String(
+        originalKey !== undefined ? row[originalKey] : ''
+      ).trim();
+
+    }).join('|');
+  });
+
+  return headers.join('|') + '||' + data.join('\n');
+}
+
+
+// Duplicate detection
 function dedupe(){
+
   const seen = {};
-  store.forEach(s=>{
-    if(s.role==='ignore') return;
-    if(!seen[s.role]) { seen[s.role]=s; return; }
-    const keep = s.rows.length > seen[s.role].rows.length ? s : seen[s.role];
-    const drop2 = keep===s ? seen[s.role] : s;
-    drop2.role='ignore'; drop2.dupe=true; seen[keep.role]=keep;
+
+  store.forEach(s => {
+
+    // Ignore already ignored sheets
+    if(s.role === 'ignore') return;
+
+    // Create fingerprint of this sheet
+    const fingerprint = sheetFingerprint(s.rows);
+
+    // First sheet of this role
+    if(!seen[s.role]) {
+
+      seen[s.role] = {
+        sheet: s,
+        fingerprint: fingerprint
+      };
+
+      return;
+    }
+
+    const previous = seen[s.role];
+
+    // SAME ROLE + SAME DATA = DUPLICATE
+    if(fingerprint === previous.fingerprint) {
+
+      // Keep the sheet with more rows
+      const keep =
+        s.rows.length >= previous.sheet.rows.length
+          ? s
+          : previous.sheet;
+
+      const duplicate =
+        keep === s
+          ? previous.sheet
+          : s;
+
+      duplicate.role = 'ignore';
+      duplicate.dupe = true;
+
+      seen[s.role] = {
+        sheet: keep,
+        fingerprint: fingerprint
+      };
+
+    } else {
+
+      // Same role but DIFFERENT data.
+      // Do NOT mark as duplicate.
+      return;
+    }
+
   });
 }
 function render(){
@@ -1293,7 +1353,7 @@ $('#run').onclick = async () => {
     result = ReconEngine.reconcile(input, {asOn: $('#asOn').value});
     bar.style.width='72%'; await new Promise(r=>setTimeout(r,20));
 
-    const statements = Object.keys(input).filter(k=>['havells','sig_indoor','sig_out','wipro'].indexOf(k)>=0)
+    const statements = Object.keys(input).filter(k=>['havells','sig_indoor','sig_out'].indexOf(k)>=0)
       .map(k=>k==='sig_indoor'?'sig indoor':k==='sig_out'?'sig out':k);
     const wb = ReconReport.build(result, {
       generated: new Date().toISOString().slice(0,16).replace('T',' '),
