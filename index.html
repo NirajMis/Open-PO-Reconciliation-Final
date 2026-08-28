@@ -13,7 +13,7 @@
 }
 @media (prefers-color-scheme: dark){
   :root{--ink:#e9edf2;--ink2:#c2cbd6;--mut:#8e9aa8;--line:#2a323c;--bg:#12171d;
-        --card:#1a2027;--brand:#12adf0;--brand2:#3fc0f7;--ok:#7fd6a0;--okbg:#16301f;
+        --card:#b7bfc7;--brand:#12adf0;--brand2:#3fc0f7;--ok:#7fd6a0;--okbg:#16301f;
         --warn:#f0be7a;--warnbg:#33260f;--bad:#f09b9b;--badbg:#331717;--grey:#222933;
         --ji-black:#e9edf2;}
 }
@@ -709,6 +709,7 @@ function reconcile(input, opts) {
       'Invoice No (Date)': ji ? [...ji.inv].join(', ') : '',
       'SO Number(s)': c.sos,
       'SOD Remarks': (sod.byKey.get(c.key) || { rows: [] }).rows.map(r => r.remarks).filter(Boolean).join(' | '),
+      'Invoice': (ji && ji.inv && ji.inv.size > 0) ? [...ji.inv].join(', ') : 'No Invoice',
       _val: valRate === null ? -1 : Math.abs(gap) * valRate,
     });
   }
@@ -1715,5 +1716,3 @@ render();
 </script>
 </body>
 </html>
-
-  
