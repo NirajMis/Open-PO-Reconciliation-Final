@@ -6,88 +6,68 @@
 <title>JI Open PO Reconciliation</title>
 <style>
 :root{
-  --bg:#f4f6fb; --panel:#ffffff; --ink:#161a22; --muted:#5b6472;
-  --line:#e4e8f0; --accent:#155ee0; --accent2:#0aa5c9; --accent-ink:#ffffff;
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#15181d; --muted:#5d6470;
+  --line:#e2e5ea; --accent:#1f5fd1; --accent-ink:#ffffff;
   --ok:#0f7a4a; --ok-bg:#e8f5ee; --warn:#8a5a00; --warn-bg:#fdf3e0;
-  --bad:#b3261e; --bad-bg:#fdecea; --radius:12px;
-  --shadow:0 1px 2px rgba(20,30,60,.04),0 8px 24px -12px rgba(20,30,60,.12);
+  --bad:#b3261e; --bad-bg:#fdecea; --radius:10px;
 }
 *{box-sizing:border-box}
-body{margin:0;background:
-    radial-gradient(1100px 420px at 12% -12%, rgba(21,94,224,.07), transparent 60%),
-    radial-gradient(900px 380px at 100% 0%, rgba(10,165,201,.06), transparent 55%),
-    var(--bg);
-  color:var(--ink);
+body{margin:0;background:var(--bg);color:var(--ink);
   font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
-.wrap{max-width:1080px;margin:0 auto;padding:26px 22px 72px}
-.topbar{display:flex;align-items:center;gap:13px;padding:6px 4px 22px;margin-bottom:20px;border-bottom:1px solid var(--line)}
-.logo{width:42px;height:42px;flex-shrink:0;border-radius:12px;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
+.wrap{max-width:1040px;margin:0 auto;padding:28px 20px 64px}
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.brand-badge{width:52px;height:52px;border-radius:14px;flex-shrink:0;
+  background:linear-gradient(135deg,#5b9cf7,#2f5fd6);color:#fff;
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 6px 16px -6px rgba(21,94,224,.55);}
-.logo span{color:#fff;font-weight:800;font-size:16px;letter-spacing:.02em;font-family:Georgia,"Times New Roman",serif}
-.brand{display:flex;flex-direction:column;line-height:1.25}
-.brand-name{font-weight:700;font-size:15.5px;letter-spacing:-.01em;color:var(--ink)}
-.brand-sub{font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+  font-size:19px;font-weight:700;letter-spacing:.01em;
+  box-shadow:0 2px 10px rgba(47,95,214,.28)}
+.brand-name{font-size:17px;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+.brand-tag{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);margin-top:3px}
+.brand-rule{border:none;border-top:1px solid var(--line);margin:0 0 26px}
 header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
-h1{font-size:23px;margin:0;letter-spacing:-.015em;font-weight:750}
-.ver{font-size:11.5px;font-weight:600;color:var(--accent);background:#eaf1fd;border-radius:20px;padding:3px 10px}
-.sub{color:var(--muted);font-size:14px;margin:4px 0 24px}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-  padding:22px;margin-bottom:18px;box-shadow:var(--shadow)}
-.drop{border:2px dashed #c7cee0;border-radius:var(--radius);background:
-    linear-gradient(180deg, rgba(21,94,224,.02), transparent 60%), var(--panel);
-  padding:42px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s,transform .1s}
-.drop:hover{transform:translateY(-1px)}
-.drop:hover,.drop.over{border-color:var(--accent);background:#f1f6fe}
-.drop strong{display:block;font-size:16.5px;margin-bottom:5px;letter-spacing:-.005em}
+h1{font-size:21px;margin:0;letter-spacing:-.01em}
+.ver{font-size:12px;color:var(--muted);background:#eceff3;border-radius:20px;padding:2px 9px}
+.sub{color:var(--muted);font-size:14px;margin:2px 0 22px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:18px}
+.drop{border:2px dashed #c6ccd6;border-radius:var(--radius);background:var(--panel);
+  padding:38px 20px;text-align:center;cursor:pointer;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:#f2f6fd}
+.drop strong{display:block;font-size:16px;margin-bottom:5px}
 .drop span{color:var(--muted);font-size:13.5px}
 input[type=file]{display:none}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
-th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-th{font-weight:700;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;
-  background:#f7f9fd;border-top:1px solid var(--line)}
-th:first-child{border-top-left-radius:8px} th:last-child{border-top-right-radius:8px}
-tbody tr:hover td{background:#fafbfe}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
 td.num{text-align:right;font-variant-numeric:tabular-nums}
-.tag{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:20px;letter-spacing:.01em}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:20px}
 .t-ok{background:var(--ok-bg);color:var(--ok)}
 .t-warn{background:var(--warn-bg);color:var(--warn)}
 .t-bad{background:var(--bad-bg);color:var(--bad)}
-button{font:inherit;font-weight:650;border:0;border-radius:9px;padding:11px 22px;cursor:pointer;transition:filter .15s,transform .1s}
-button:active{transform:translateY(1px)}
-.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--accent-ink);
-  box-shadow:0 6px 16px -8px rgba(21,94,224,.6)}
-.primary:hover:not(:disabled){filter:brightness(1.06)}
-.primary:disabled{background:#b9c3d4;box-shadow:none;cursor:not-allowed}
-.ghost{background:#eef1f7;color:var(--ink)}
-.ghost:hover{background:#e4e9f2}
+button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:11px 20px;cursor:pointer}
+.primary{background:var(--accent);color:var(--accent-ink)}
+.primary:disabled{background:#b9c3d4;cursor:not-allowed}
+.ghost{background:#eceff3;color:var(--ink)}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.msg{border-radius:9px;padding:12px 14px;margin:10px 0;font-size:14px}
+.msg{border-radius:8px;padding:12px 14px;margin:10px 0;font-size:14px}
 .msg.bad{background:var(--bad-bg);color:#7d1a15;border:1px solid #f3c9c5}
 .msg.warn{background:var(--warn-bg);color:#6b4600;border:1px solid #f0dcb4}
 .msg.ok{background:var(--ok-bg);color:#0b5c38;border:1px solid #bfe3d0}
 .msg b{display:block;margin-bottom:3px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:12px}
-.kpi{background:#f8f9fd;border:1px solid var(--line);border-radius:10px;padding:14px 15px;transition:box-shadow .15s}
-.kpi:hover{box-shadow:0 6px 16px -10px rgba(20,30,60,.25)}
-.kpi .v{font-size:23px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi{background:#f8f9fb;border:1px solid var(--line);border-radius:8px;padding:13px 14px}
+.kpi .v{font-size:22px;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .kpi .l{font-size:12px;color:var(--muted);margin-top:3px}
 .kpi.bad .v{color:var(--bad)} .kpi.ok .v{color:var(--ok)}
-h2{font-size:13.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 14px;font-weight:700}
-code{background:#eef0f7;padding:1px 6px;border-radius:5px;font-size:12.5px}
+h2{font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 12px}
+code{background:#eef0f4;padding:1px 5px;border-radius:4px;font-size:12.5px}
 .small{font-size:12.5px;color:var(--muted)}
 .hide{display:none}
-footer{margin-top:28px;color:var(--muted);font-size:12px;text-align:center}
 @media (prefers-color-scheme:dark){
-:root{--bg:#12141a;--panel:#1b1f27;--ink:#e8eaee;--muted:#98a1af;--line:#2b3038;
-  --ok-bg:#122c20;--warn-bg:#2e2412;--bad-bg:#331a18;--accent:#5b8def;--accent2:#38c1e8;--accent-ink:#0d1117}
-body{background:radial-gradient(1100px 420px at 12% -12%, rgba(91,141,239,.08), transparent 60%), var(--bg)}
-.ver{background:#1c2636;color:#8fb4f4}
+:root{--bg:#14161a;--panel:#1c1f25;--ink:#e8eaee;--muted:#98a1af;--line:#2b3038;
+  --ok-bg:#122c20;--warn-bg:#2e2412;--bad-bg:#331a18;--accent:#5b8def;--accent-ink:#0d1117}
 .drop{border-color:#3a4049}.drop:hover,.drop.over{background:#1f2836}
 .kpi{background:#20242b}.ghost{background:#2b3038;color:var(--ink)}
-tbody tr:hover td{background:#20242c}
-th{background:#20242c}
 code{background:#2b3038}
 .msg.bad{border-color:#5a2a26;color:#f0b3ae}
 .msg.warn{border-color:#5c4a22;color:#f0d5a0}.msg.ok{border-color:#25503c;color:#a8dcc0}
@@ -96,13 +76,15 @@ code{background:#2b3038}
 </head>
 <body>
 <div class="wrap">
-  <div class="topbar">
-    <div class="logo" aria-hidden="true"><span>JI</span></div>
-    <div class="brand">
-      <span class="brand-name">Jaisingh Innovations LLP</span>
-      <span class="brand-sub">Sales &middot; Open PO Reconciliation</span>
+  <div class="brand">
+    <div class="brand-badge">JI</div>
+    <div>
+      <div class="brand-name">Jaisingh Innovations LLP</div>
+      <div class="brand-tag">Sales &middot; Open PO Reconciliation</div>
     </div>
   </div>
+  <hr class="brand-rule">
+
   <header>
     <h1>Open PO Reconciliation</h1>
     <span class="ver" id="ver">v1.3</span>
@@ -808,6 +790,16 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       return d.length >= 6 && /^[0-9\s\-\/]+$/.test(String(s || '').trim());
     }
 
+    // Same DIS bucket lookup EXCEPTIONS uses (PO + item code), applied here so
+    // EXCEPTIONS 2 can also show Delivery Challan / Invoice details from the dis.
+    function findDisBucket(poKey, cat, item) {
+      if (item && byPoJI[poKey + '|' + item]) return byPoJI[poKey + '|' + item];
+      if (cat && byPoJI[poKey + '|' + cat]) return byPoJI[poKey + '|' + cat];
+      if (cat && byPoMat[poKey + '|' + cat]) return byPoMat[poKey + '|' + cat];
+      if (item && byPoMat[poKey + '|' + item]) return byPoMat[poKey + '|' + item];
+      return null;
+    }
+
     var sodGroups = {};
     sodLines.forEach(function (l) {
       if (l.bal <= 0) return;
@@ -851,13 +843,17 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         issue = 'QTY MISMATCH';
         action = 'Amend the SO quantity, or ask the customer to correct the statement.';
       }
+      var disB = findDisBucket(g.poKey, g.cat, g.item);
+      var dn = disB ? disB.dns.slice(-3).join('; ') : '';
+      var inv = disB ? disB.invs.slice(-3).join('; ') : '';
       return {
         sos: sos, cust: g.cust, po: g.po, cat: g.cat, item: g.item, wo: wos.join(' / '),
         desc: g.desc, n: L.length, qty: qty, delivered: del, bal: bal,
         custPend: custPend, gap: custPend == null ? bal : bal - custPend,
         price: price, openVal: bal * price,
         risk: issue === 'ON STATEMENT' ? 0 : (issue === 'QTY MISMATCH' ? Math.abs(bal - (custPend || 0)) * price : bal * price),
-        issue: issue, action: action, tdd: tdd, rems: rems.join(' | ')
+        issue: issue, action: action, tdd: tdd, rems: rems.join(' | '),
+        dn: dn, inv: inv
       };
     }).filter(function (e) { return e.issue !== 'ON STATEMENT'; });
     exc2.sort(function (a, b) { return b.risk - a.risk; });
@@ -1106,7 +1102,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     var R = [];
     function line(a, b) { R.push([null, a == null ? null : a, b == null ? null : b]); }
     line(null, null);
-    line('JAISINGH INNOVATIONS LLP -  OPEN PO RECONCILIATION', null);
+    line('JAISINGH INNOVATIONS  -  OPEN PO RECONCILIATION', null);
     line('Generated', stamp + '  |  reconciled as on ' + s.asOn + '  |  engine v' + (root.JIEngine ? root.JIEngine.VERSION : '1.3') +
       '  |  sources: ' + (opts.sources || s.sheets.join(', ')));
     line(null, null);
@@ -1200,15 +1196,17 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     var e2h = ['SO Number(s)', 'Customer', 'PO No (Header)', 'BP Catalog No.', 'JI Item Code', 'WO Number(s)',
       'Description', 'SOD Lines', 'SOD Qty', 'SOD Delivered', 'SOD Balance Qty', 'Customer Pending',
       'Qty Gap (SOD - Cust)', 'Price after Disc', 'Value of Open Qty (Rs)', 'Value at Risk (Rs)',
-      'Issue', 'Suggested Action', 'Target Dispatch Date', 'SOD Remarks'];
+      'Issue', 'Suggested Action', 'Target Dispatch Date', 'SOD Remarks',
+      'Delivery Challan No (Date)', 'Invoice No (Date)', 'Invoice Status'];
     var e2r = res.exc2.map(function (e) {
       return [e.sos.join(', '), e.cust, e.po, e.cat, e.item, e.wo, e.desc, e.n, e.qty, e.delivered, e.bal,
         e.custPend == null ? null : e.custPend, e.gap, e.price || null, inr(e.openVal), inr(e.risk),
-        e.issue, e.action, e.tdd, e.rems];
+        e.issue, e.action, e.tdd, e.rems,
+        e.dn, e.inv, e.inv ? 'Invoiced' : 'Not Invoiced'];
     });
     e2r.push([]);
     e2r.push(['TOTAL', null, null, null, null, null, null, null, null, null, null, null, null, null,
-      inr(s.exc2Value), null, null, null, null, null]);
+      inr(s.exc2Value), null, null, null, null, null, null, null, null]);
     var e2 = [['EXCEPTIONS 2 - SOD AS THE BASE. Open JI sales order lines the customer is not showing as pending (sorted by open value).'], e2h].concat(e2r);
     var ws2 = aoaSheet(e2, autoWidth(e2h, e2r));
     ws2['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 1, c: 0 }, e: { r: 1 + res.exc2.length, c: e2h.length - 1 } }) };
