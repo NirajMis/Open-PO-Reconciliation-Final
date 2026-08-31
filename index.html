@@ -8,8 +8,10 @@
 :root{
   --bg:#f6f7f9; --panel:#ffffff; --ink:#15181d; --muted:#5d6470;
   --line:#e2e5ea; --accent:#1f5fd1; --accent-ink:#ffffff;
-  --ok:#0f7a4a; --ok-bg:#e8f5ee; --warn:#8a5a00; --warn-bg:#fdf3e0;
-  --bad:#b3261e; --bad-bg:#fdecea; --radius:10px;
+  --ok:#0F5132; --ok-bg:#D1E7DD; --ok-line:#BADBCC;
+  --warn:#846358; --warn-bg:#FFF3CD; --warn-line:#FFECB5;
+  --bad:#842029; --bad-bg:#F8D7DA; --bad-line:#F5C2C7;
+  --info:#1f5fd1; --info-bg:#E7F0FD; --info-line:#BFD7F8; --radius:10px;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);
@@ -37,9 +39,9 @@ h1{font-size:21px;margin:0;letter-spacing:-.01em}
 .drop span{color:var(--muted);font-size:13.5px}
 input[type=file]{display:none}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
-th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
-th{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-td.num{text-align:right;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:9px 12px;border:1px solid var(--line);vertical-align:middle}
+th{background:#f8f9fb;font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:20px}
 .t-ok{background:var(--ok-bg);color:var(--ok)}
 .t-warn{background:var(--warn-bg);color:var(--warn)}
@@ -50,25 +52,32 @@ button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:11px 20px
 .ghost{background:#eceff3;color:var(--ink)}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .msg{border-radius:8px;padding:12px 14px;margin:10px 0;font-size:14px}
-.msg.bad{background:var(--bad-bg);color:#7d1a15;border:1px solid #f3c9c5}
-.msg.warn{background:var(--warn-bg);color:#6b4600;border:1px solid #f0dcb4}
-.msg.ok{background:var(--ok-bg);color:#0b5c38;border:1px solid #bfe3d0}
+.msg.bad{background:var(--bad-bg);color:var(--bad);border:1px solid var(--bad-line)}
+.msg.warn{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line)}
+.msg.ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-line)}
 .msg b{display:block;margin-bottom:3px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:12px}
 .kpi{background:#f8f9fb;border:1px solid var(--line);border-radius:8px;padding:13px 14px}
 .kpi .v{font-size:22px;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .kpi .l{font-size:12px;color:var(--muted);margin-top:3px}
-.kpi.bad .v{color:var(--bad)} .kpi.ok .v{color:var(--ok)}
+.kpi.ok{background:var(--ok-bg);border-color:var(--ok-line)}
+.kpi.warn{background:var(--warn-bg);border-color:var(--warn-line)}
+.kpi.bad{background:var(--bad-bg);border-color:var(--bad-line)}
+.kpi.info{background:var(--info-bg);border-color:var(--info-line)}
+.kpi.ok .v{color:var(--ok)} .kpi.warn .v{color:var(--warn)}
+.kpi.bad .v{color:var(--bad)} .kpi.info .v{color:var(--info)}
 h2{font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 12px}
-code{background:#eef0f4;padding:1px 5px;border-radius:4px;font-size:12.5px}
+code{background:var(--info-bg);color:var(--info);border:1px solid var(--info-line);padding:2px 7px;border-radius:6px;font-weight:600}
 .small{font-size:12.5px;color:var(--muted)}
 .hide{display:none}
 @media (prefers-color-scheme:dark){
 :root{--bg:#14161a;--panel:#1c1f25;--ink:#e8eaee;--muted:#98a1af;--line:#2b3038;
-  --ok-bg:#122c20;--warn-bg:#2e2412;--bad-bg:#331a18;--accent:#5b8def;--accent-ink:#0d1117}
+  --ok-bg:#122c20;--warn-bg:#2e2412;--bad-bg:#331a18;--info-bg:#16233d;
+  --ok-line:#25503c;--warn-line:#5c4a22;--bad-line:#5a2a26;--info-line:#2c4570;
+  --info:#5b8def;--accent:#5b8def;--accent-ink:#0d1117}
 .drop{border-color:#3a4049}.drop:hover,.drop.over{background:#1f2836}
 .kpi{background:#20242b}.ghost{background:#2b3038;color:var(--ink)}
-code{background:#2b3038}
+th{background:#20242b}
 .msg.bad{border-color:#5a2a26;color:#f0b3ae}
 .msg.warn{border-color:#5c4a22;color:#f0d5a0}.msg.ok{border-color:#25503c;color:#a8dcc0}
 }
@@ -325,11 +334,26 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     }
   ];
 
+  // Resolve every logical field of an adapter against a sheet's header index,
+  // using the SAME alias lists (`fields`) that extraction later uses. This is
+  // the single source of truth for "what counts as column X" - identification
+  // and extraction must never disagree about it again.
+  function resolveFields(hidx, fieldsDef) {
+    var f = {};
+    for (var k in fieldsDef) {
+      if (Object.prototype.hasOwnProperty.call(fieldsDef, k)) {
+        f[k] = resolve(hidx, fieldsDef[k]);
+      }
+    }
+    return f;
+  }
+
   function identify(headers) {
     var hidx = indexHeaders(headers);
     for (var i = 0; i < ADAPTERS.length; i++) {
       var a = ADAPTERS[i];
-      var ok = a.need.every(function (n) { return n in hidx; });
+      var f = resolveFields(hidx, a.fields);
+      var ok = a.must.every(function (k) { return f[k] != null; });
       if (ok) return a;
     }
     return null;
@@ -344,10 +368,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     var hidx = indexHeaders(headers);
     var best = null;
     ADAPTERS.forEach(function (a) {
-      var hit = a.need.filter(function (n) { return n in hidx; });
+      var f = resolveFields(hidx, a.fields);
+      var hit = a.must.filter(function (k) { return f[k] != null; });
       if (!hit.length) return;
       if (!best || hit.length > best.hit.length) {
-        best = { adapter: a, hit: hit, missing: a.need.filter(function (n) { return !(n in hidx); }) };
+        best = { adapter: a, hit: hit, missing: a.must.filter(function (k) { return f[k] == null; }) };
       }
     });
     if (best && best.hit.length >= 1 && best.missing.length) return best;
@@ -1396,14 +1421,14 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     var s=res.summary;
     var k=document.createElement('div'); k.className='panel';
     k.innerHTML='<h2>Result</h2><div class="kpis">'+
-      kpi(s.combos,'PO + material combinations','')+
+      kpi(s.combos,'PO + material combinations','info')+
       kpi(s.matched,'agree','ok')+
-      kpi(s.notBooked,'NOT BOOKED',s.notBooked?'bad':'')+
-      kpi(s.qtyMismatch,'QTY MISMATCH',s.qtyMismatch?'bad':'')+
-      kpi(s.jiClosed,'JI closed / GRN pending','')+
-      kpi(cr(s.openPoValue),'open at the customers','')+
-      kpi(cr(s.exceptionValue),'gap at stake',s.exceptionValue?'bad':'')+
-      kpi(s.overdue,'overdue lines',s.overdue?'bad':'')+
+      kpi(s.notBooked,'NOT BOOKED',s.notBooked?'bad':'ok')+
+      kpi(s.qtyMismatch,'QTY MISMATCH',s.qtyMismatch?'bad':'ok')+
+      kpi(s.jiClosed,'JI closed / GRN pending',s.jiClosed?'warn':'ok')+
+      kpi(cr(s.openPoValue),'open at the customers','info')+
+      kpi(cr(s.exceptionValue),'gap at stake',s.exceptionValue?'bad':'ok')+
+      kpi(s.overdue,'overdue lines',s.overdue?'bad':'ok')+
       '</div>';
     out.appendChild(k);
 
