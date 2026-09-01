@@ -179,7 +179,24 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
-<script>/* JI Open PO Reconciliation - engine  v1.3
+<script>/* JI Open PO Reconciliation - engine  v1.4
+ *
+ * v1.4 fixes, 01 Sep 2026:
+ *   1. COLUMN SANITY CHECK. A resolved Net Price column whose values are
+ *      mostly non-numeric (e.g. plant codes), or a resolved DLCF/DLRQ column
+ *      whose values are mostly not date-like, now stops the run with a named
+ *      error instead of silently producing wrong Rs values and wrong overdue
+ *      counts. This was found the hard way: a "reference" file had lost one
+ *      data column while keeping the old header row, so every column from
+ *      Net Price onward was reading one column to its own left.
+ *   2. DUPLICATES is now sorted highest-priority first (HIGH confidence
+ *      groups ranked by duplicate value at risk, descending; REVIEW groups
+ *      after, ranked by open value) and the exported sheet shades HIGH rows
+ *      in red, darkest for the highest value at risk, lightest for the
+ *      lowest - so priority is visible at a glance, not just in a column.
+ *   3. README section headers ("1. HEADLINE", "2. WHAT EACH TAB CONTAINS", ...)
+ *      and the title banner are now coloured in the exported workbook; they
+ *      were plain, unstyled text before.
  *
  * v1.3 fixes, 27 Aug 2026:
  *   1. Column resolution is punctuation-insensitive. "PEND." now resolves.
@@ -275,6 +292,70 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
 
   var TOL = 0.5; // half a piece - the statements carry float noise
 
+  /* ---------- column sanity check (header/data misalignment guard) ----------
+   * A header row and its data can drift apart upstream - typically a data
+   * column is deleted from the export but the header row is not shifted to
+   * match, so every header from that point on points one column to the left
+   * of its real data. The pending-column FAIL LOUD check above catches the
+   * case where that lands on Pending. These two catch it landing on Net
+   * Price (numbers replaced by text such as a plant code) or on DLCF/DLRQ
+   * (dates replaced by numbers or other non-date text).
+   */
+
+  // True for blank, a plain number, or a string that is a number once
+  // common currency/formatting noise (Rs, INR, commas) is stripped.
+  function looksNumericLike(v) {
+    if (v == null || v === '') return true;
+    if (typeof v === 'number') return isFinite(v);
+    var s = String(v).trim();
+    if (!s) return true;
+    var stripped = s.replace(/^(rs\.?|inr|usd|eur|₹)\s*/i, '').replace(/,/g, '').trim();
+    return /^-?\d+(\.\d+)?$/.test(stripped);
+  }
+
+  // True for blank, a Date object, an Excel serial in a plausible date range
+  // (roughly year 1968-2064), or a string in dd.mm.yyyy / yyyy-mm-dd style.
+  function looksDateLike(v) {
+    if (v == null || v === '') return true;
+    if (v instanceof Date) return !isNaN(v);
+    if (typeof v === 'number') return v >= 25000 && v <= 60000;
+    var s = String(v).trim();
+    if (!s) return true;
+    return /^\d{1,2}[.\/-]\d{1,2}[.\/-]\d{4}$/.test(s) || /^\d{4}[.\/-]\d{1,2}[.\/-]\d{1,2}$/.test(s);
+  }
+
+  // Checks the RAW sheet rows (not the extracted lines) for the field(s) an
+  // adapter resolved, so it catches misalignment even on rows the adapter
+  // would otherwise skip. Pushes to diag.fatal - same FAIL LOUD contract as
+  // the rest of normStatement.
+  function columnSanityCheck(sheet, f, diag, adapterLabel) {
+    function check(fieldKey, label, validator, expected) {
+      var col = f[fieldKey];
+      if (!col) return;
+      var total = 0, bad = 0, sample = null;
+      sheet.rows.forEach(function (r) {
+        var v = r[col];
+        if (v == null || v === '') return;
+        total++;
+        if (!validator(v)) {
+          bad++;
+          if (sample == null) sample = v;
+        }
+      });
+      if (total >= 3 && bad / total > 0.4) {
+        diag.fatal.push('Sheet "' + sheet.name + '" (' + adapterLabel + '): the "' + col + '" column, ' +
+          'mapped to ' + label + ', does not look like ' + expected + ' on ' + bad + ' of ' + total +
+          ' non-blank rows - for example "' + txt(sample) + '". Header misaligned: the header row and ' +
+          'the data columns have drifted apart (most likely a data column was removed upstream without ' +
+          'shifting the header row to match). Fix the source export and re-run - this file has NOT been ' +
+          'used to produce any numbers.');
+      }
+    }
+    check('rate', 'Net Price', looksNumericLike, 'numeric values (text such as a plant code was found instead)');
+    check('dlcf', 'DLCF (confirmed delivery date)', looksDateLike, 'dates (numbers or other non-date text were found instead)');
+    check('dlrq', 'DLRQ (requested delivery date)', looksDateLike, 'dates (numbers or other non-date text were found instead)');
+  }
+
   /* ---------- header resolution ---------- */
 
   // Build canonical-header -> column-name index for a sheet's header row.
@@ -313,8 +394,8 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
       fields: {
         po: ['PO Nr'], mat: ['Mat Nr'], desc: ['Mat Desc'],
         poDate: ['PO Date'], line: ['Item'],
-        poQty: ['PO'], ack: ['AB'], la: ['LA'], gr: ['GR'],
-        git: ['GIT'], pending: ['PEND.', 'PEND', 'Pending'],
+        poQty: ['PO', 'PO Qty'], ack: ['AB'], la: ['LA'], gr: ['GR', 'GR Qty'],
+        git: ['GIT', 'On Water Qty'], pending: ['PEND.', 'PEND', 'Pending'],
         dlrq: ['DLRQ'], dlcf: ['DLCF'],
         rate: ['Net Price'], plant: ['Plnt'], itemText: ['Item Text']
       },
@@ -457,6 +538,14 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
         '. Columns present: ' + sheet.headers.join(', '));
       return null;
     }
+
+    // COLUMN SANITY CHECK: catch header/data misalignment before it is
+    // trusted for a single row. See the 01 Sep 2026 note at the top of this
+    // file - a "reference" file that looked fine turned out to have this
+    // exact defect.
+    var fatalBefore = diag.fatal.length;
+    columnSanityCheck(sheet, f, diag, adapter.label);
+    if (diag.fatal.length > fatalBefore) return null;
 
     var lines = [];
     sheet.rows.forEach(function (r, i) {
@@ -1086,7 +1175,7 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
         'Confirm it is a schedule, not a double booking.');
     });
 
-    var rows = [], high = 0, value = 0;
+    var high = 0, value = 0;
     groups.forEach(function (g) {
       var risk = 0;
       if (g.conf === 'HIGH') {
@@ -1095,6 +1184,21 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
         risk = sorted.slice(1).reduce(function (s, l) { return s + l.bal * l.price; }, 0);
         value += risk;
       }
+      g.risk = risk;
+      g.totalValue = g.lines.reduce(function (s, l) { return s + l.bal * l.price; }, 0);
+    });
+
+    // Highest priority first: HIGH-confidence groups ranked by duplicate
+    // value at risk (descending), then REVIEW groups ranked by open value.
+    // The exported sheet shades rows red on this same ranking - high to low.
+    groups.sort(function (a, b) {
+      var ra = a.conf === 'HIGH' ? 1 : 0, rb = b.conf === 'HIGH' ? 1 : 0;
+      if (ra !== rb) return rb - ra;
+      return ra ? (b.risk - a.risk) : (b.totalValue - a.totalValue);
+    });
+
+    var rows = [];
+    groups.forEach(function (g) {
       g.lines.forEach(function (l, i) {
         rows.push({
           group: g.code, conf: i === 0 ? g.conf : '', issue: i === 0 ? g.issue : '',
@@ -1102,7 +1206,7 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
           po: l.po, refType: refType(l), item: l.item, cat: l.cat, desc: l.desc,
           qty: l.qty, bal: l.bal, delivered: l.delivered, tdd: l.tdd, wo: splitWO(l.wo),
           price: l.price, openVal: l.bal * l.price,
-          risk: i === 0 ? risk : '', why: i === 0 ? g.why : '', action: i === 0 ? g.action : '',
+          risk: i === 0 ? g.risk : '', why: i === 0 ? g.why : '', action: i === 0 ? g.action : '',
           rem: l.rem
         });
       });
@@ -1112,7 +1216,7 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
 
   var API = {
     run: run, identify: identify, identifyRef: identifyRef, nearMiss: nearMiss,
-    ADAPTERS: ADAPTERS, canon: canon, indexHeaders: indexHeaders, fmtDate: fmtDate, VERSION: '1.3'
+    ADAPTERS: ADAPTERS, canon: canon, indexHeaders: indexHeaders, fmtDate: fmtDate, VERSION: '1.4'
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
@@ -1152,39 +1256,17 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
     }
   };
 
-  var XLSX_HIGH_STYLE = {
-    fill: { patternType: 'solid', fgColor: { rgb: 'FFFFE5E5' } },
-    font: { name: 'Calibri', sz: 11, color: { rgb: 'FF7A1F1F' } },
-    alignment: { vertical: 'center', wrapText: true },
-    border: {
-      top: { style: 'thin', color: { rgb: 'FFFFC7C7' } },
-      bottom: { style: 'thin', color: { rgb: 'FFFFC7C7' } },
-      left: { style: 'thin', color: { rgb: 'FFFFC7C7' } },
-      right: { style: 'thin', color: { rgb: 'FFFFC7C7' } }
-    }
-  };
-
-  function styleRow(ws, rowIndex, colCount, style) {
-    for (var c = 0; c < colCount; c++) {
-      var ref = XLSX.utils.encode_cell({ r: rowIndex, c: c });
-      if (ws[ref]) ws[ref].s = style;
-    }
-  }
-
-  function styleReadmeSections(ws) {
-    // README uses column B for section headings (e.g. 1. HEADLINE).
-    for (var r = 0; r < (ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']).e.r + 1 : 0); r++) {
-      var cell = ws[XLSX.utils.encode_cell({ r: r, c: 1 })];
-      if (cell && typeof cell.v === 'string' && /^\d+\.\s/.test(cell.v)) {
-        styleRow(ws, r, 2, XLSX_HEADER_STYLE);
-      }
-    }
-  }
-
   var XLSX_TOTAL_STYLE = {
     fill: { patternType: 'solid', fgColor: { rgb: 'FFE9EEF3' } },
     font: { name: 'Calibri', sz: 11, bold: true, color: { rgb: 'FF1B2430' } },
     alignment: { vertical: 'center' }
+  };
+
+  // README banner row (brand amber, dark ink) - matches the app's accent colour.
+  var XLSX_TITLE_STYLE = {
+    fill: { patternType: 'solid', fgColor: { rgb: 'FFFFB703' } },
+    font: { name: 'Calibri', sz: 14, bold: true, color: { rgb: 'FF1A1200' } },
+    alignment: { horizontal: 'left', vertical: 'center' }
   };
 
   function styleHeader(ws, rowIndex, colCount) {
@@ -1197,10 +1279,41 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
     }
   }
 
+  // Same shape as styleHeader, for the README's title banner row.
+  function styleReadmeTitle(ws, rowIndex, colCount) {
+    ws['!rows'] = ws['!rows'] || [];
+    ws['!rows'][rowIndex] = { hpt: 26 };
+    for (var c = 0; c < colCount; c++) {
+      var ref = XLSX.utils.encode_cell({ r: rowIndex, c: c });
+      if (!ws[ref]) ws[ref] = { t: 's', v: '' };
+      ws[ref].s = XLSX_TITLE_STYLE;
+    }
+  }
+
   function styleTotal(ws, rowIndex, colCount) {
     for (var c = 0; c < colCount; c++) {
       var ref = XLSX.utils.encode_cell({ r: rowIndex, c: c });
       if (ws[ref]) ws[ref].s = XLSX_TOTAL_STYLE;
+    }
+  }
+
+  // Slight red, gradated by priority: t=0 is the lightest tint (lowest value
+  // at risk among HIGH-confidence duplicate groups), t=1 the strongest
+  // (highest value at risk). Kept soft on purpose - a flag, not an alarm.
+  function redShade(t) {
+    t = Math.max(0, Math.min(1, isFinite(t) ? t : 0));
+    var lo = { r: 255, g: 236, b: 236 }, hi = { r: 240, g: 128, b: 128 };
+    function ch(k) { return Math.round(lo[k] + (hi[k] - lo[k]) * t); }
+    function hex(n) { var s = n.toString(16).toUpperCase(); return s.length < 2 ? '0' + s : s; }
+    return 'FF' + hex(ch('r')) + hex(ch('g')) + hex(ch('b'));
+  }
+
+  function styleRowFill(ws, rowIndex, colCount, argb) {
+    for (var c = 0; c < colCount; c++) {
+      var ref = XLSX.utils.encode_cell({ r: rowIndex, c: c });
+      if (!ws[ref]) ws[ref] = { t: 's', v: '' };
+      ws[ref].s = ws[ref].s || {};
+      ws[ref].s.fill = { patternType: 'solid', fgColor: { rgb: argb } };
     }
   }
 
@@ -1225,20 +1338,25 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
 
     /* ---------- README ---------- */
     var R = [];
+    var readmeTitleRow = null, readmeHeaderRows = [];
     function line(a, b) { R.push([null, a == null ? null : a, b == null ? null : b]); }
+    // A numbered/lettered section header ("1. HEADLINE", "0. READ THIS FIRST", ...) -
+    // recorded so it can be coloured on export, same as every other sheet's header.
+    function head(a) { readmeHeaderRows.push(R.length); line(a, null); }
     line(null, null);
+    readmeTitleRow = R.length;
     line('JAISINGH INNOVATIONS  -  OPEN PO RECONCILIATION', null);
-    line('Generated', stamp + '  |  reconciled as on ' + s.asOn + '  |  engine v' + (root.JIEngine ? root.JIEngine.VERSION : '1.3') +
+    line('Generated', stamp + '  |  reconciled as on ' + s.asOn + '  |  engine v' + (root.JIEngine ? root.JIEngine.VERSION : '1.4') +
       '  |  sources: ' + (opts.sources || s.sheets.join(', ')));
     line(null, null);
 
     if (res.diag.warn.length) {
-      line('0. READ THIS FIRST', null);
+      head('0. READ THIS FIRST');
       res.diag.warn.forEach(function (w, i) { line('Warning ' + (i + 1), w); });
       line(null, null);
     }
 
-    line('1. HEADLINE', null);
+    head('1. HEADLINE');
     line('Statement lines read', s.statementLines + ' lines across ' + s.sheets.join(', ') +
       ', rolled up to ' + s.combos + ' PO + material combinations');
     line('Open PO value', cr(s.openPoValue) + ' pending at the customers');
@@ -1257,7 +1375,7 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
     line('Unvalued gaps', s.unvalued + ' exception rows have no rate on either side, so their value is unknown - they are sorted last but are NOT less important.');
     line(null, null);
 
-    line('2. WHAT EACH TAB CONTAINS', null);
+    head('2. WHAT EACH TAB CONTAINS');
     line('EXCEPTIONS', 'THE ACTION LIST. Every PO + material where the customer and JI disagree, across every statement supplied. Sorted by value at stake. Start here.');
     line('EXCEPTIONS 2 - SOD BASIS', 'The same reconciliation read from your sod: open sales order lines that no live customer PO line backs. EXCEPTIONS finds what you have not booked; this finds what you should not still be carrying.');
     line('EXCEPTIONS 3 - PRICE', 'Customer rate vs JI rate on every open line, plus every open line missing a rate on one side. Statements that carry no rate column at all (Havells, Wipro) are excluded rather than listed line by line.');
@@ -1266,7 +1384,7 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
     s.sheets.forEach(function (n) { line(n, 'The statement as received, with the JI reconciliation columns added on the right.'); });
     line(null, null);
 
-    line('3. HOW A LINE IS CLASSIFIED', null);
+    head('3. HOW A LINE IS CLASSIFIED');
     line('Match key', 'Customer PO number + customer material number, matched against Cust PO No + Customer ItemCode on the dis export. Where the customer codes an item two ways (Wipro), the code is translated to the JI item number and matched on that. Quantities are compared at PO + material level.');
     line('JI open qty', 'Sum of OpenSOQty on dis lines whose SOStatus is not Completed / Closed / Cancelled.');
     line('OK - Matched', 'JI open quantity equals customer pending, or equals customer pending plus the GIT already in transit.');
@@ -1277,23 +1395,20 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
     line('Tolerance', 'Quantity differences below 0.5 pcs are treated as agreement - the statements carry sub-unit float noise from Excel.');
     line(null, null);
 
-    line('4. RATES', null);
+    head('4. RATES');
     line('Rate used', 'Customer Net Price where the statement carries one. Where it does not (Havells and Wipro statements carry no rate), the JI rate is used instead so the exposure is still valued - it is never silently valued at zero.');
     line('JI rate', 'Price after Discount from the sod - first from the SO against this same PO, then the same catalogue code, then the same JI item code, then the price list. Every row on EXCEPTIONS names which was used in Rate Source.');
     line(null, null);
 
-    line('5. RUN LOG', null);
+    head('5. RUN LOG');
     res.diag.log.forEach(function (l) {
       line(l.id, l.sheet + '  -  ' + l.rows + ' lines  |  pending read from column "' + l.pendingCol + '"');
     });
     (opts.refLog || []).forEach(function (l) { line(l.id, l.text); });
 
     var wsR = aoaSheet(R, [2, 30, 130]);
-    styleReadmeSections(wsR);
-    // Keep the report title visually prominent as well.
-    styleRow(wsR, 1, 3, XLSX_HEADER_STYLE);
-    wsR['!rows'] = wsR['!rows'] || [];
-    wsR['!rows'][1] = { hpt: 28 };
+    if (readmeTitleRow != null) styleReadmeTitle(wsR, readmeTitleRow, 3);
+    readmeHeaderRows.forEach(function (idx) { styleHeader(wsR, idx, 3); });
     XLSX.utils.book_append_sheet(wb, wsR, 'README');
 
     /* ---------- EXCEPTIONS ---------- */
@@ -1374,18 +1489,30 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
         d.qty, d.bal, d.delivered, d.tdd, d.wo, d.price || null, inr(d.openVal),
         d.risk === '' ? null : inr(d.risk), d.why, d.action, d.rem];
     });
-    var dsheet = [['DUPLICATE SOD LINES - the same order booked more than once. Every line of a group shares a Group code; the detail is written on the first line of each group. HIGH = act on it. REVIEW = often legitimate schedule lines, check before acting.'], dh].concat(dr);
+    var dsheet = [['DUPLICATE SOD LINES - the same order booked more than once. Every line of a group shares a Group code; the detail is written on the first line of each group. Groups are listed highest priority first. HIGH = act on it, shaded red by value at risk (darkest = highest). REVIEW = often legitimate schedule lines, check before acting.'], dh].concat(dr);
     var wsD = aoaSheet(dsheet, autoWidth(dh, dr));
     styleHeader(wsD, 1, dh.length);
-    // Light-red highlight for every line belonging to a HIGH-priority duplicate group.
-    var highGroups = {};
+    wsD['!freeze'] = { xSplit: 0, ySplit: 2 };
+
+    // Priority shading: every row of a HIGH-confidence group gets a red tint
+    // scaled to that group's duplicate value at risk, darkest at the top
+    // (highest value at risk) fading to a light tint at the bottom. Only the
+    // first line of a group carries conf/risk, so look them up by group code.
+    var dupGroupInfo = {};
     res.duplicates.forEach(function (d) {
-      if (d.conf === 'HIGH') highGroups[d.group] = true;
+      if (d.conf) dupGroupInfo[d.group] = { conf: d.conf, risk: (d.risk === '' || d.risk == null) ? 0 : Number(d.risk) };
+    });
+    var maxDupRisk = 0;
+    Object.keys(dupGroupInfo).forEach(function (g) {
+      if (dupGroupInfo[g].conf === 'HIGH' && dupGroupInfo[g].risk > maxDupRisk) maxDupRisk = dupGroupInfo[g].risk;
     });
     res.duplicates.forEach(function (d, i) {
-      if (highGroups[d.group]) styleRow(wsD, i + 2, dh.length, XLSX_HIGH_STYLE);
+      var info = dupGroupInfo[d.group];
+      if (!info || info.conf !== 'HIGH') return;
+      var intensity = maxDupRisk > 0 ? info.risk / maxDupRisk : 1;
+      styleRowFill(wsD, i + 2, dh.length, redShade(intensity));
     });
-    wsD['!freeze'] = { xSplit: 0, ySplit: 2 };
+
     XLSX.utils.book_append_sheet(wb, wsD, 'DUPLICATES');
 
     /* ---------- OVERDUE ---------- */
