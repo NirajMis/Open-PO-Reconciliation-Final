@@ -684,7 +684,6 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
     };
     var byPoMat = {};   // PO|customerItem
     var byPoJI = {};    // PO|JI item
-    var byPO = {};      // PO -> true (any item exists in DIS)
     function bucket(map, k) {
       if (!map[k]) map[k] = {
         seen: 0, open: 0, delivered: 0, invoiced: 0, netInv: 0,
@@ -698,7 +697,6 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
       var ci = key(r[dc.custItem]);
       var ji = key(r[dc.item]);
       var open = OPEN_STATUS(r[dc.status]);
-      if (po) byPO[po] = true;
       [[byPoMat, po + '|' + ci], [byPoJI, po + '|' + ji]].forEach(function (pair) {
         var b = bucket(pair[0], pair[1]);
         b.seen++;
@@ -850,26 +848,19 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
             if (byPoJI[g.po + '|' + jis[j]]) { b = byPoJI[g.po + '|' + jis[j]]; via = 'PO + JI item code'; }
           }
         }
-        var poFound = !!byPO[g.po];
         var found = !!b;
-        var itemMatched = found;
         var open = b ? b.open : 0;
         var delivered = b ? b.delivered : 0;
         var invoiced = b ? b.invoiced : 0;
         var netInv = b ? b.netInv : 0;
         var shipped = Math.max(delivered, invoiced, netInv);
-        var creditNoteQty = Math.max(0, invoiced - netInv);
-        var remarkText = b && b.remarks ? b.remarks.join(' | ') : '';
-        var hasProcessEvidence = (delivered > TOL || invoiced > TOL || netInv > TOL ||
-          (b && b.dns && b.dns.length) || (b && b.invs && b.invs.length) ||
-          /partially\s+invoiced|invoiced|dispatch|delivered/i.test(remarkText));
 
         var verdict;
         if (Math.abs(pending) < TOL && Math.abs(open) < TOL) verdict = 'OK - Nothing pending either side';
         else if (Math.abs(open - pending) < TOL) verdict = 'OK - Matched';
         else if (Math.abs(open - (pending + git)) < TOL) verdict = 'OK - Matched (GIT)';
         else if (Math.abs(open) < TOL && pending > TOL && !found) verdict = 'NOT BOOKED';
-        else if (Math.abs(open) < TOL && pending > TOL && found && !hasProcessEvidence && shipped + TOL < pending) verdict = 'CLOSED WITHOUT DISPATCH';
+        else if (Math.abs(open) < TOL && pending > TOL && found && shipped + TOL < pending) verdict = 'CLOSED WITHOUT DISPATCH';
         else if (Math.abs(open) < TOL && pending > TOL && found) verdict = 'JI SHOWS CLOSED';
         else verdict = 'QTY MISMATCH';
 
@@ -878,70 +869,6 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
         var rateUsed = rate > 0 ? rate : rr.rate;
         var rateSrc = rate > 0 ? 'Customer' : (rr.src || '');
         var gap = pending - open;
-
-        // Business-readable root cause: keep Issue as the short headline and
-        // put the exact reason + quantity/status evidence in Sub Remark.
-        var invoiceStatus = 'Not Invoiced';
-        if (b && invoiced > TOL && creditNoteQty > TOL) invoiceStatus = 'Invoiced - Credit Note Adjusted';
-        else if (b && invoiced > TOL) invoiceStatus = 'Invoiced';
-        else if (b && delivered > TOL) invoiceStatus = 'Not Invoiced - Invoice Pending';
-
-        function buildSubRemark() {
-          var parts = [];
-          var custItem = g.mat || '-';
-          var hasDC = !!(b && b.dns && b.dns.length);
-          var hasInvoice = !!(b && b.invs && b.invs.length);
-
-          if (!found) {
-            return 'PO + Item not matched; PO ' + g.po + ' / Customer Mat Nr ' + custItem + ' is not found in JI DIS/system; Customer Pending Qty = ' + pending + '; JI Open Qty = 0; reason: the document/PO is not posted in the JI system against this item.';
-          }
-
-          if (verdict === 'CLOSED WITHOUT DISPATCH') {
-            parts.push('PO + Item matched');
-            parts.push('Customer Pending Qty = ' + pending);
-            parts.push('JI Open Qty = ' + open);
-            if (delivered > TOL) parts.push('JI Delivered Qty = ' + delivered);
-            if (invoiced > TOL) parts.push('JI Invoiced Qty = ' + invoiced);
-            if (netInv > TOL) parts.push('Net Invoice Qty = ' + netInv);
-            parts.push('reason: JI/SO is closed but sufficient dispatch is not posted against the customer pending quantity');
-            return parts.join('; ') + '.';
-          }
-
-          parts.push('PO + Item matched');
-          parts.push('Customer Pending Qty = ' + pending);
-          parts.push('JI Open Qty = ' + open);
-          if (Math.abs(pending - open) >= TOL) parts.push('Qty Gap = ' + Math.abs(pending - open));
-          if (git > TOL) parts.push('On Water/GIT Qty = ' + git);
-          if (delivered > TOL) parts.push('JI Delivered Qty = ' + delivered);
-          if (invoiced > TOL) parts.push('JI Invoiced Qty = ' + invoiced);
-          if (netInv > TOL) parts.push('Net Invoice Qty = ' + netInv);
-          if (creditNoteQty > TOL) parts.push('Credit Note Qty = ' + creditNoteQty);
-          if (hasDC) parts.push('Delivery Challan available: ' + b.dns.slice(-3).join('; '));
-          if (hasInvoice) parts.push('Invoice available: ' + b.invs.slice(-3).join('; '));
-          if (remarkText) parts.push('Remarks: ' + remarkText);
-
-          if (creditNoteQty > TOL) {
-            parts.push('reason: Invoice Qty is higher than Net Invoice Qty by ' + creditNoteQty + ', so the difference is due to Credit Note adjustment');
-          } else if (invoiced > TOL && pending > TOL) {
-            parts.push('reason: Invoice is posted; remaining customer pending may require GRN/receipt posting or reconciliation');
-          } else if (delivered > TOL && !hasInvoice) {
-            parts.push('reason: JI Delivered Qty is posted but Invoice No. is not available, so invoice booking is pending');
-          } else if (hasDC && invoiced <= TOL) {
-            parts.push('reason: Delivery Challan is posted but invoice booking is pending');
-          } else if (pending > TOL && open > TOL) {
-            parts.push('reason: Customer Pending Qty and JI Open Qty do not reconcile; verify PO quantity, dispatch, invoice and customer receipt/GRN');
-          } else if (verdict === 'JI SHOWS CLOSED') {
-            if (hasInvoice) parts.push('reason: Invoice is posted; remaining customer pending may require GRN/receipt posting or reconciliation');
-            else if (delivered > TOL) parts.push('reason: Delivery is posted but Invoice No. is not available, so invoice booking is pending');
-            else parts.push('reason: JI Open Qty is zero while customer still shows pending quantity; verify closure and customer receipt/GRN');
-          } else {
-            parts.push('reason: quantity/status mismatch requires reconciliation between customer pending and JI transaction status');
-          }
-
-          return parts.join('; ') + (parts.length ? '.' : '');
-        }
-
-        var subRemark = buildSubRemark();
 
         combos.push({
           sheet: f.sheet, adapter: f.adapter, customer: f.customer,
@@ -952,10 +879,9 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
           pending: pending, open: open, git: git, gap: gap,
           rate: rateUsed, rateSrc: rateSrc, custRate: rate, jiRateOnly: rr.rate, jiRateSrc: rr.src,
           value: rateUsed > 0 ? Math.abs(gap) * rateUsed : null,
-          verdict: verdict, found: found, poFound: poFound, itemMatched: itemMatched, via: via,
+          verdict: verdict, found: found, via: via,
           hasRateCol: !!st.columns.rate,
-          delivered: delivered, invoiced: invoiced, netInv: netInv, creditNoteQty: creditNoteQty,
-          invoiceStatus: invoiceStatus, subRemark: subRemark,
+          delivered: delivered, invoiced: invoiced,
           dn: b ? b.dns.slice(-3).join('; ') : '', inv: b ? b.invs.slice(-3).join('; ') : '',
           sos: b ? b.sos.slice() : [],
           dlcf: f.dlcf, dlrq: f.dlrq, plant: f.plant,
@@ -980,27 +906,6 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
       });
       c.wo = wos.join(' / ');
       c.sodRemarks = rems.join(' | ');
-      if (c.sodRemarks && c.subRemark && c.subRemark.indexOf('SOD Remark:') < 0) {
-        c.subRemark += ' SOD Remark: ' + c.sodRemarks;
-      }
-
-      // Keep the full detailed Sub Remark above, then finish with one short
-      // management-readable conclusion. Issue/verdict logic is untouched.
-      var therefore = '';
-      if (c.verdict === 'NOT BOOKED') {
-        therefore = 'Therefore: PO not posted in JI DIS.';
-      } else if (c.verdict === 'ITEM MISMATCH') {
-        therefore = 'Therefore: Customer item not mapped with JI item.';
-      } else if (c.verdict === 'QTY MISMATCH') {
-        therefore = 'Therefore: Pending and JI Open Qty differ.';
-      } else if (c.verdict === 'JI SHOWS CLOSED') {
-        therefore = 'Therefore: Invoice/Delivery done; GRN pending.';
-      } else if (c.verdict === 'CLOSED WITHOUT DISPATCH') {
-        therefore = 'Therefore: SO closed before required dispatch.';
-      } else {
-        therefore = 'Therefore: Quantity/status requires reconciliation.';
-      }
-      if (c.subRemark) c.subRemark += ' ' + therefore;
     });
 
     /* --- EXCEPTIONS --- */
@@ -1162,7 +1067,6 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
       combos: combos.length,
       matched: count('OK - Matched') + count('OK - Matched (GIT)') + count('OK - Nothing pending either side'),
       notBooked: count('NOT BOOKED'),
-      itemMismatch: count('ITEM MISMATCH'),
       qtyMismatch: count('QTY MISMATCH'),
       jiClosed: count('JI SHOWS CLOSED'),
       closedNoDispatch: count('CLOSED WITHOUT DISPATCH'),
@@ -1312,7 +1216,7 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
 
   var API = {
     run: run, identify: identify, identifyRef: identifyRef, nearMiss: nearMiss,
-    ADAPTERS: ADAPTERS, canon: canon, indexHeaders: indexHeaders, fmtDate: fmtDate, VERSION: '1.5'
+    ADAPTERS: ADAPTERS, canon: canon, indexHeaders: indexHeaders, fmtDate: fmtDate, VERSION: '1.4'
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
@@ -1362,12 +1266,6 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
   var XLSX_TITLE_STYLE = {
     fill: { patternType: 'solid', fgColor: { rgb: 'FFFFB703' } },
     font: { name: 'Calibri', sz: 14, bold: true, color: { rgb: 'FF1A1200' } },
-    alignment: { horizontal: 'left', vertical: 'center' }
-  };
-
-  // README "Open Detail" jump links - underlined blue, like any normal hyperlink.
-  var XLSX_LINK_STYLE = {
-    font: { name: 'Calibri', sz: 11, bold: true, color: { rgb: 'FF1155CC' }, underline: true },
     alignment: { horizontal: 'left', vertical: 'center' }
   };
 
@@ -1438,48 +1336,10 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
     var stamp = res.helpers.fmtDate(s.generated) + ' ' +
       String(s.generated.getHours()).padStart(2, '0') + ':' + String(s.generated.getMinutes()).padStart(2, '0');
 
-    // Grouped by Issue (each group internally still highest value first) so every
-    // issue type's rows sit together as one contiguous block on EXCEPTIONS - a
-    // README link for that issue can then jump straight to where its block starts,
-    // instead of the top of the whole sheet. Computed up front (before README)
-    // so the README hyperlinks below can target the exact row.
-    var issueOrder = ['NOT BOOKED', 'ITEM MISMATCH', 'QTY MISMATCH', 'JI SHOWS CLOSED', 'CLOSED WITHOUT DISPATCH'];
-    var sortedExceptions = res.exceptions.slice().sort(function (a, b) {
-      var ia = issueOrder.indexOf(a.verdict), ib = issueOrder.indexOf(b.verdict);
-      if (ia === -1) ia = issueOrder.length;
-      if (ib === -1) ib = issueOrder.length;
-      if (ia !== ib) return ia - ib;
-      return (b.value || 0) - (a.value || 0);
-    });
-    // First data row (0-based, within the EXCEPTIONS body) where each issue's
-    // block begins.
-    var issueFirstRow = {};
-    sortedExceptions.forEach(function (c, i) {
-      if (!(c.verdict in issueFirstRow)) issueFirstRow[c.verdict] = i;
-    });
-    // Spreadsheet cell (e.g. "A5") where each issue's block actually starts -
-    // data row 0 sits at sheet row index 2 (0-based), after the title row and
-    // the header row, i.e. spreadsheet row 3.
-    var issueCellRef = {};
-    issueOrder.forEach(function (v) {
-      var r = (v in issueFirstRow) ? (2 + issueFirstRow[v]) : 2;
-      issueCellRef[v] = 'A' + (r + 1);
-    });
-
     /* ---------- README ---------- */
     var R = [];
-    var readmeTitleRow = null, readmeHeaderRows = [], readmeLinks = [];
-    // link (optional): { sheet: 'EXCEPTIONS', label: 'Open EXCEPTIONS \u2192', cellKey: 'NOT BOOKED' } -
-    // renders a 4th "Open Detail" column with a real Excel hyperlink that jumps
-    // straight to that tab - and, when cellKey names an issue in issueCellRef,
-    // straight to the exact row where that issue's block starts.
-    function line(a, b, link) {
-      R.push([null, a == null ? null : a, b == null ? null : b, link ? link.label : null]);
-      if (link) {
-        var cell = (link.cellKey && issueCellRef[link.cellKey]) ? issueCellRef[link.cellKey] : 'A1';
-        readmeLinks.push({ row: R.length - 1, sheet: link.sheet, cell: cell });
-      }
-    }
+    var readmeTitleRow = null, readmeHeaderRows = [];
+    function line(a, b) { R.push([null, a == null ? null : a, b == null ? null : b]); }
     // A numbered/lettered section header ("1. HEADLINE", "0. READ THIS FIRST", ...) -
     // recorded so it can be coloured on export, same as every other sheet's header.
     function head(a) { readmeHeaderRows.push(R.length); line(a, null); }
@@ -1499,48 +1359,29 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
     head('1. HEADLINE');
     line('Statement lines read', s.statementLines + ' lines across ' + s.sheets.join(', ') +
       ', rolled up to ' + s.combos + ' PO + material combinations');
-    line('Open PO value', cr(s.openPoValue) + ' pending at the customers',
-      { sheet: 'EXCEPTIONS', label: 'Open \u2192' });
-    line('Fully matched', s.matched + ' of ' + s.combos + ' combinations agree',
-      { sheet: 'EXCEPTIONS', label: 'Open \u2192' });
-    line('NOT BOOKED', s.notBooked + ' combinations - on the customer statement, no open SO in JI. Book these now.',
-      { sheet: 'EXCEPTIONS', label: 'Open \u2192', cellKey: 'NOT BOOKED' });
-    line('QTY MISMATCH', s.qtyMismatch + ' combinations - both sides / status evidence do not reconcile; Sub Remark shows the exact quantity and process reason.',
-      { sheet: 'EXCEPTIONS', label: 'Open \u2192', cellKey: 'QTY MISMATCH' });
-    line('JI CLOSED / GRN PENDING', s.jiClosed + ' combinations - JI delivered or invoiced, customer still shows pending.',
-      { sheet: 'EXCEPTIONS', label: 'Open \u2192', cellKey: 'JI SHOWS CLOSED' });
-    line('CLOSED WITHOUT DISPATCH', s.closedNoDispatch + ' combinations - SO closed but JI shipped less than the customer still expects.',
-      { sheet: 'EXCEPTIONS', label: 'Open \u2192', cellKey: 'CLOSED WITHOUT DISPATCH' });
-    line('Total on EXCEPTIONS', s.exceptionRows + ' rows, ' + cr(s.exceptionValue) + ' of quantity gap at stake',
-      { sheet: 'EXCEPTIONS', label: 'Open EXCEPTIONS \u2192' });
-    line('OVERDUE', s.overdue + ' lines past the confirmed delivery date, ' + lakh(s.overdueValue),
-      { sheet: 'OVERDUE', label: 'Open OVERDUE \u2192' });
+    line('Open PO value', cr(s.openPoValue) + ' pending at the customers');
+    line('Fully matched', s.matched + ' of ' + s.combos + ' combinations agree');
+    line('NOT BOOKED', s.notBooked + ' combinations - on the customer statement, no open SO in JI. Book these now.');
+    line('QTY MISMATCH', s.qtyMismatch + ' combinations - both sides open, quantities differ.');
+    line('JI CLOSED / GRN PENDING', s.jiClosed + ' combinations - JI delivered or invoiced, customer still shows pending.');
+    line('CLOSED WITHOUT DISPATCH', s.closedNoDispatch + ' combinations - SO closed but JI shipped less than the customer still expects.');
+    line('Total on EXCEPTIONS', s.exceptionRows + ' rows, ' + cr(s.exceptionValue) + ' of quantity gap at stake');
+    line('OVERDUE', s.overdue + ' lines past the confirmed delivery date, ' + lakh(s.overdueValue));
     line('DUPLICATES IN THE SOD', s.dupGroups + ' groups (' + s.dupLines + ' open SO lines) look like the same order booked more than once, of which ' +
-      s.dupHigh + ' lines are high confidence. ' + money(s.dupValue) + ' would be made and shipped twice if every copy stands. See DUPLICATES.',
-      { sheet: 'DUPLICATES', label: 'Open DUPLICATES \u2192' });
+      s.dupHigh + ' lines are high confidence. ' + money(s.dupValue) + ' would be made and shipped twice if every copy stands. See DUPLICATES.');
     line('SOD-BASIS EXPOSURE', s.exc2Rows + ' open SO combinations not backed by a live customer PO line, ' + cr(s.exc2Value) +
-      ' of open order value. Read EXCEPTIONS 2.',
-      { sheet: 'EXCEPTIONS 2 - SOD BASIS', label: 'Open EXCEPTIONS 2 \u2192' });
-    line('PRICE', s.exc3Rows + ' open lines are rated differently by the customer than by JI, or carry no rate on one side. Read EXCEPTIONS 3.',
-      { sheet: 'EXCEPTIONS 3 - PRICE', label: 'Open EXCEPTIONS 3 \u2192' });
+      ' of open order value. Read EXCEPTIONS 2.');
+    line('PRICE', s.exc3Rows + ' open lines are rated differently by the customer than by JI, or carry no rate on one side. Read EXCEPTIONS 3.');
     line('Unvalued gaps', s.unvalued + ' exception rows have no rate on either side, so their value is unknown - they are sorted last but are NOT less important.');
     line(null, null);
 
     head('2. WHAT EACH TAB CONTAINS');
-    line('EXCEPTIONS', 'THE ACTION LIST. Every PO + material where the customer and JI disagree, across every statement supplied. Sorted by value at stake. Start here.',
-      { sheet: 'EXCEPTIONS', label: 'Open \u2192' });
-    line('EXCEPTIONS 2 - SOD BASIS', 'The same reconciliation read from your sod: open sales order lines that no live customer PO line backs. EXCEPTIONS finds what you have not booked; this finds what you should not still be carrying.',
-      { sheet: 'EXCEPTIONS 2 - SOD BASIS', label: 'Open \u2192' });
-    line('EXCEPTIONS 3 - PRICE', 'Customer rate vs JI rate on every open line, plus every open line missing a rate on one side. Statements that carry no rate column at all (Havells, Wipro) are excluded rather than listed line by line.',
-      { sheet: 'EXCEPTIONS 3 - PRICE', label: 'Open \u2192' });
-    line('DUPLICATES', 'Open sod lines that look like the same order booked twice, grouped and rated by confidence. HIGH = act on it. REVIEW = often legitimate schedule lines, check before acting.',
-      { sheet: 'DUPLICATES', label: 'Open \u2192' });
-    line('OVERDUE', 'Lines whose confirmed delivery date is already past. Dispatch or re-commit.',
-      { sheet: 'OVERDUE', label: 'Open \u2192' });
-    s.sheets.forEach(function (n) {
-      line(n, 'The statement as received, with the JI reconciliation columns added on the right.',
-        { sheet: n.substring(0, 31), label: 'Open \u2192' });
-    });
+    line('EXCEPTIONS', 'THE ACTION LIST. Every PO + material where the customer and JI disagree, across every statement supplied. Sorted by value at stake. Start here.');
+    line('EXCEPTIONS 2 - SOD BASIS', 'The same reconciliation read from your sod: open sales order lines that no live customer PO line backs. EXCEPTIONS finds what you have not booked; this finds what you should not still be carrying.');
+    line('EXCEPTIONS 3 - PRICE', 'Customer rate vs JI rate on every open line, plus every open line missing a rate on one side. Statements that carry no rate column at all (Havells, Wipro) are excluded rather than listed line by line.');
+    line('DUPLICATES', 'Open sod lines that look like the same order booked twice, grouped and rated by confidence. HIGH = act on it. REVIEW = often legitimate schedule lines, check before acting.');
+    line('OVERDUE', 'Lines whose confirmed delivery date is already past. Dispatch or re-commit.');
+    s.sheets.forEach(function (n) { line(n, 'The statement as received, with the JI reconciliation columns added on the right.'); });
     line(null, null);
 
     head('3. HOW A LINE IS CLASSIFIED');
@@ -1565,46 +1406,32 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
     });
     (opts.refLog || []).forEach(function (l) { line(l.id, l.text); });
 
-    var wsR = aoaSheet(R, [2, 30, 130, 22]);
-    // Force the sheet range to include column D even on rows that had no link
-    // (aoa_to_sheet only "sees" the columns that actually carry a value).
-    wsR['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(R.length - 1, 0), c: 3 } });
-    if (readmeTitleRow != null) styleReadmeTitle(wsR, readmeTitleRow, 4);
-    readmeHeaderRows.forEach(function (idx) { styleHeader(wsR, idx, 4); });
-    // Wire up the "Open Detail" hyperlinks - internal jump to the target tab,
-    // landing on the specific cell computed above (issue blocks) or A1 otherwise.
-    readmeLinks.forEach(function (item) {
-      var ref = XLSX.utils.encode_cell({ r: item.row, c: 3 });
-      if (!wsR[ref]) wsR[ref] = { t: 's', v: '' };
-      wsR[ref].l = { Target: "#'" + item.sheet + "'!" + item.cell, Tooltip: 'Jump to ' + item.sheet };
-      wsR[ref].s = XLSX_LINK_STYLE;
-    });
+    var wsR = aoaSheet(R, [2, 30, 130]);
+    if (readmeTitleRow != null) styleReadmeTitle(wsR, readmeTitleRow, 3);
+    readmeHeaderRows.forEach(function (idx) { styleHeader(wsR, idx, 3); });
     XLSX.utils.book_append_sheet(wb, wsR, 'README');
 
     /* ---------- EXCEPTIONS ---------- */
     var eh = ['Sheet', 'Customer', 'Customer PO', 'PO Date', 'Customer Mat Nr', 'JI Item Code', 'WO Number(s)',
       'Description', 'Customer Pending', 'JI Open Qty', 'Qty Gap', 'Rate Used (Rs)', 'Rate Source',
-      'Value of Gap (Rs)', 'Issue', 'Sub Remark (final)', 'Suggested Action', 'JI Delivered Qty', 'JI Invoiced Qty',
+      'Value of Gap (Rs)', 'Issue', 'Suggested Action', 'JI Delivered Qty', 'JI Invoiced Qty',
       'Delivery Challan No (Date)', 'Invoice No (Date)', 'Invoice Status', 'SO Number(s)', 'SOD Remarks'];
     var ACTION = {
-      'NOT BOOKED': 'Raise the sales order now - the customer is expecting this and JI has nothing posted against the PO.',
-      'ITEM MISMATCH': 'Verify the customer item code vs JI item-code mapping and correct the master/booking line.',
-      'QTY MISMATCH': 'Compare line-wise with the buyer and amend whichever side is wrong after checking delivery/invoice/credit-note status.',
-      'JI SHOWS CLOSED': 'Check GRN/receipt posting at the customer; if invoice is missing, complete invoice booking first.',
-      'CLOSED WITHOUT DISPATCH': 'Verify why the SO was closed without sufficient dispatch and reopen/correct if closed in error.'
+      'NOT BOOKED': 'Raise the sales order now - the customer is expecting this and JI has nothing open against it.',
+      'QTY MISMATCH': 'Compare line-wise with the buyer and amend whichever side is wrong.',
+      'JI SHOWS CLOSED': 'JI has shipped it. Chase the GRN / ASN posting at the customer.',
+      'CLOSED WITHOUT DISPATCH': 'The SO was closed but the quantity was never shipped. Check whether it was closed in error.'
     };
-    // issueOrder / sortedExceptions / issueFirstRow / issueCellRef were computed
-    // up front (see above, before README) so the README links could target them.
-    var er = sortedExceptions.map(function (c) {
+    var er = res.exceptions.map(function (c) {
       return [c.sheet, c.customer, c.po, c.poDate, c.mat, c.jiItem, c.wo, c.desc,
         c.pending, c.open, c.gap, c.rate > 0 ? c.rate : null, c.rateSrc,
-        c.value == null ? null : inr(c.value), c.verdict, c.subRemark || '', ACTION[c.verdict] || '',
-        c.delivered, c.invoiced, c.dn, c.inv, c.invoiceStatus || (c.inv ? 'Invoiced' : 'Not Invoiced'), c.sos.join(', '), c.sodRemarks];
+        c.value == null ? null : inr(c.value), c.verdict, ACTION[c.verdict] || '',
+        c.delivered, c.invoiced, c.dn, c.inv, c.inv ? 'Invoiced' : 'Not Invoiced', c.sos.join(', '), c.sodRemarks];
     });
     er.push([]);
     er.push(['TOTAL', null, null, null, null, null, null, null, null, null, null, null, null,
       inr(s.exceptionValue), null, null, null, null, null, null, null, null, null]);
-    var e1 = [[ 'RECONCILIATION EXCEPTIONS - action needed, grouped by Issue (each block sorted by value at stake within itself). Rows with no rate on either side sort last within their block and show a blank value - they are not less important.' ], eh].concat(er);
+    var e1 = [[ 'RECONCILIATION EXCEPTIONS - action needed (sorted by value at stake). Rows with no rate on either side sort last and show a blank value - they are not less important.' ], eh].concat(er);
     var wsE = aoaSheet(e1, autoWidth(eh, er));
     styleHeader(wsE, 1, eh.length);
     styleTotal(wsE, 2 + res.exceptions.length, eh.length);
