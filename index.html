@@ -6,6 +6,7 @@
 <title>JI Open PO Reconciliation</title>
 <style>
 :root{
+  color-scheme:dark;
   --bg:#0b0f1a; --bg2:#11162a; --panel:#141a2e; --panel2:#171e36; --ink:#f2f4fb; --muted:#9aa3c0;
   --line:#262e4d; --accent:#ffb703; --accent2:#ffd166; --accent-ink:#1a1200;
   --ok:#4ade80; --ok-bg:#0f2e1e; --ok-line:#1f5c3a;
@@ -13,12 +14,58 @@
   --bad:#ff6b6b; --bad-bg:#341012; --bad-line:#6e2226;
   --info:#5b9dff; --info-bg:#0f1f3d; --info-line:#26417a; --radius:12px;
   --glow: 0 0 0 rgba(255,183,3,0);
+  /* --- tokens added for the light / dark switch (dark = default) --- */
+  --grid:#2e3760;            /* grid / rule lines: tables, cards, chips */
+  --head-ink:var(--accent2); /* h2 + brand tag */
+  --h1-a:#ffffff; --h1-b:#ffd166; --h1-c:#ffb703;
+  --th-bg:rgba(255,255,255,.045);
+  --kpi-bg:rgba(255,255,255,.02);
+  --chip-bg:rgba(255,255,255,.02);
+  --drop-line:#3a4066;
+  --ghost-bg:#1c2340; --ghost-bg-hover:#232a4c;
+  --disabled-bg:#333a55; --disabled-ink:#7a83a3;
+  --field-bg:#0e1327;
+  --code-ink:#9dc0ff;
+  --msg-bad-ink:#ffb4b4; --msg-warn-ink:#ffd98a; --msg-ok-ink:#a9f5c4;
+  --login-a:#070a13; --login-b:#0b0f1a;
+  --glow-a:rgba(255,183,3,.16); --glow-b:rgba(91,157,255,.14);
+  --glow-la:rgba(255,183,3,.20); --glow-lb:rgba(91,157,255,.16);
+  --shadow:0 12px 30px -18px rgba(0,0,0,.6);
+  --shadow-lg:0 30px 80px -30px rgba(0,0,0,.8);
+  --chart-label:#9aa3c0;
+}
+html[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f4f6fb; --bg2:#e9edf6; --panel:#ffffff; --panel2:#fbfcff; --ink:#141a2b; --muted:#5b6483;
+  --line:#c3cadd; --accent:#e08c00; --accent2:#f6ab1f; --accent-ink:#2a1c00;
+  --ok:#0f7a44; --ok-bg:#e6f7ee; --ok-line:#9ad9bb;
+  --warn:#8a5d00; --warn-bg:#fff4dc; --warn-line:#ecc884;
+  --bad:#c02a31; --bad-bg:#fdeaeb; --bad-line:#f0adb1;
+  --info:#1f5fd0; --info-bg:#eaf1ff; --info-line:#b3c8f3;
+  --grid:#aab4cd;
+  --head-ink:#96620a;
+  --h1-a:#1b2338; --h1-b:#a86a00; --h1-c:#8a5600;
+  --th-bg:#edf1f9;
+  --kpi-bg:#f7f9fe;
+  --chip-bg:#f7f9fe;
+  --drop-line:#b1bad2;
+  --ghost-bg:#eef1f8; --ghost-bg-hover:#e1e7f3;
+  --disabled-bg:#dfe3ee; --disabled-ink:#98a0b8;
+  --field-bg:#ffffff;
+  --code-ink:#1f4fb0;
+  --msg-bad-ink:#8f1f26; --msg-warn-ink:#7a5200; --msg-ok-ink:#0d6a3c;
+  --login-a:#eef2fb; --login-b:#dee5f4;
+  --glow-a:rgba(255,183,3,.22); --glow-b:rgba(91,157,255,.18);
+  --glow-la:rgba(255,183,3,.24); --glow-lb:rgba(91,157,255,.20);
+  --shadow:0 12px 30px -20px rgba(24,36,70,.35);
+  --shadow-lg:0 24px 60px -28px rgba(24,36,70,.35);
+  --chart-label:#5b6483;
 }
 *{box-sizing:border-box}
 body{margin:0;color:var(--ink);
   background:
-    radial-gradient(1100px 520px at 12% -8%, rgba(255,183,3,.16), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, rgba(91,157,255,.14), transparent 55%),
+    radial-gradient(1100px 520px at 12% -8%, var(--glow-a), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, var(--glow-b), transparent 55%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
   background-attachment:fixed;
   font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
@@ -32,26 +79,26 @@ body{margin:0;color:var(--ink);
 .brand-badge .ji-logo-text{font-size:25px;font-weight:900;letter-spacing:-.08em;line-height:1;color:#fff;font-family:Arial,Helvetica,sans-serif}
 .brand-name{font-size:17px;font-weight:800;letter-spacing:-.01em;color:var(--ink)}
 .brand-tag{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
-  color:var(--accent2);margin-top:3px}
+  color:var(--head-ink);margin-top:3px}
 .brand-rule{border:none;border-top:1px solid var(--line);margin:0 0 26px}
 header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
 h1{font-size:22px;margin:0;letter-spacing:-.01em;
-  background:linear-gradient(90deg,#fff,#ffd166 60%,#ffb703);-webkit-background-clip:text;background-clip:text;color:transparent}
+  background:linear-gradient(90deg,var(--h1-a),var(--h1-b) 60%,var(--h1-c));-webkit-background-clip:text;background-clip:text;color:transparent}
 .ver{font-size:12px;color:var(--accent-ink);background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:20px;padding:2px 10px;font-weight:700}
 .sub{color:var(--muted);font-size:14px;margin:2px 0 22px}
 .panel{background:linear-gradient(180deg, var(--panel2), var(--panel));border:1px solid var(--line);
   border-radius:var(--radius);padding:20px;margin-bottom:18px;
-  box-shadow:0 12px 30px -18px rgba(0,0,0,.6);}
-.drop{border:2px dashed #3a4066;border-radius:var(--radius);background:rgba(255,183,3,.03);
+  box-shadow:var(--shadow);}
+.drop{border:2px dashed var(--drop-line);border-radius:var(--radius);background:rgba(255,183,3,.03);
   padding:38px 20px;text-align:center;cursor:pointer;transition:.15s}
 .drop:hover,.drop.over{border-color:var(--accent);background:rgba(255,183,3,.08);
   box-shadow:0 0 0 3px rgba(255,183,3,.12) inset}
 .drop strong{display:block;font-size:16px;margin-bottom:5px;color:var(--ink)}
 .drop span{color:var(--muted);font-size:13.5px}
 input[type=file]{display:none}
-table{width:100%;border-collapse:collapse;font-size:13.5px}
-th,td{text-align:left;padding:9px 12px;border:1px solid var(--line);vertical-align:middle}
-th{background:rgba(255,255,255,.03);font-weight:700;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+table{width:100%;border-collapse:collapse;font-size:13.5px;border:1px solid var(--grid)}
+th,td{text-align:left;padding:9px 12px;border:1px solid var(--grid);vertical-align:middle}
+th{background:var(--th-bg);font-weight:700;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .tag{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:20px}
 .t-ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-line)}
@@ -61,17 +108,17 @@ button{font:inherit;font-weight:700;border:0;border-radius:9px;padding:11px 20px
 .primary{background:linear-gradient(135deg,var(--accent2),var(--accent));color:var(--accent-ink);
   box-shadow:0 0 18px rgba(255,183,3,.35), 0 4px 14px -4px rgba(0,0,0,.5)}
 .primary:hover:not(:disabled){filter:brightness(1.06);box-shadow:0 0 26px rgba(255,183,3,.55)}
-.primary:disabled{background:#333a55;color:#7a83a3;box-shadow:none;cursor:not-allowed}
-.ghost{background:#1c2340;color:var(--ink);border:1px solid var(--line)}
-.ghost:hover{background:#232a4c}
+.primary:disabled{background:var(--disabled-bg);color:var(--disabled-ink);box-shadow:none;cursor:not-allowed}
+.ghost{background:var(--ghost-bg);color:var(--ink);border:1px solid var(--grid)}
+.ghost:hover{background:var(--ghost-bg-hover)}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .msg{border-radius:9px;padding:12px 14px;margin:10px 0;font-size:14px}
-.msg.bad{background:var(--bad-bg);color:#ffb4b4;border:1px solid var(--bad-line)}
-.msg.warn{background:var(--warn-bg);color:#ffd98a;border:1px solid var(--warn-line)}
-.msg.ok{background:var(--ok-bg);color:#a9f5c4;border:1px solid var(--ok-line)}
+.msg.bad{background:var(--bad-bg);color:var(--msg-bad-ink);border:1px solid var(--bad-line)}
+.msg.warn{background:var(--warn-bg);color:var(--msg-warn-ink);border:1px solid var(--warn-line)}
+.msg.ok{background:var(--ok-bg);color:var(--msg-ok-ink);border:1px solid var(--ok-line)}
 .msg b{display:block;margin-bottom:3px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:12px}
-.kpi{background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:10px;padding:13px 14px;position:relative;overflow:hidden}
+.kpi{background:var(--kpi-bg);border:1px solid var(--grid);border-radius:10px;padding:13px 14px;position:relative;overflow:hidden}
 .kpi .v{font-size:23px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .kpi .l{font-size:12px;color:var(--muted);margin-top:3px}
 .kpi.ok{background:var(--ok-bg);border-color:var(--ok-line)}
@@ -80,30 +127,31 @@ button{font:inherit;font-weight:700;border:0;border-radius:9px;padding:11px 20px
 .kpi.info{background:var(--info-bg);border-color:var(--info-line)}
 .kpi.ok .v{color:var(--ok)} .kpi.warn .v{color:var(--warn)}
 .kpi.bad .v{color:var(--bad)} .kpi.info .v{color:var(--info)}
-h2{font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent2);margin:0 0 12px;
+h2{font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:var(--head-ink);margin:0 0 12px;
   display:flex;align-items:center;gap:8px}
 h2::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);
   box-shadow:0 0 8px var(--accent),0 0 2px var(--accent)}
-code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);padding:2px 7px;border-radius:6px;font-weight:700}
+code{background:var(--info-bg);color:var(--code-ink);border:1px solid var(--info-line);padding:2px 7px;border-radius:6px;font-weight:700}
 .small{font-size:12.5px;color:var(--muted)}
 .hide{display:none}
 /* ---- chart ---- */
 .chartwrap{display:flex;gap:24px;flex-wrap:wrap;align-items:center}
 .chartwrap svg{overflow:visible}
 .legend{display:flex;flex-direction:column;gap:8px;font-size:13px}
-.legend .li{display:flex;align-items:center;gap:8px}
+.legend .li{display:flex;align-items:center;gap:8px;
+  border:1px solid var(--grid);background:var(--chip-bg);border-radius:8px;padding:5px 10px}
 .legend .sw{width:11px;height:11px;border-radius:3px;flex-shrink:0}
 .legend b{font-variant-numeric:tabular-nums}
 /* ---- login ---- */
 #loginScreen{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;
   background:
-    radial-gradient(900px 500px at 20% 10%, rgba(255,183,3,.20), transparent 55%),
-    radial-gradient(800px 500px at 85% 90%, rgba(91,157,255,.16), transparent 55%),
-    linear-gradient(180deg,#070a13,#0b0f1a);
+    radial-gradient(900px 500px at 20% 10%, var(--glow-la), transparent 55%),
+    radial-gradient(800px 500px at 85% 90%, var(--glow-lb), transparent 55%),
+    linear-gradient(180deg,var(--login-a),var(--login-b));
   padding:20px}
 .login-card{width:100%;max-width:380px;background:linear-gradient(180deg,var(--panel2),var(--panel));
   border:1px solid var(--line);border-radius:16px;padding:32px 28px 26px;
-  box-shadow:0 30px 80px -30px rgba(0,0,0,.8);text-align:center}
+  box-shadow:var(--shadow-lg);text-align:center}
 .bulb{width:64px;height:64px;margin:0 auto 14px;position:relative;border-radius:16px;
   background:linear-gradient(145deg,#5b9dff,#2f62d8);display:flex;align-items:center;justify-content:center;
   box-shadow:0 0 22px rgba(91,157,255,.40),0 8px 24px rgba(0,0,0,.35);overflow:hidden}
@@ -111,16 +159,56 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
 .login-title{font-size:19px;font-weight:800;margin-bottom:2px}
 .login-sub{color:var(--muted);font-size:13px;margin-bottom:22px}
 .login-card input{width:100%;font:inherit;padding:12px 14px;margin-bottom:12px;border-radius:9px;
-  border:1px solid var(--line);background:#0e1327;color:var(--ink);outline:none;transition:.15s}
+  border:1px solid var(--grid);background:var(--field-bg);color:var(--ink);outline:none;transition:.15s}
 .login-card input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,183,3,.15)}
 .login-card button{width:100%;margin-top:4px;font-size:15px;padding:12px}
-.login-err{color:#ffb4b4;font-size:12.5px;margin-top:12px;min-height:16px}
-.login-foot{margin-top:18px;font-size:11.5px;color:#5c6486}
+.login-err{color:var(--bad);font-size:12.5px;margin-top:12px;min-height:16px}
+.login-foot{margin-top:18px;font-size:11.5px;color:var(--muted)}
 @keyframes flicker{0%,100%{opacity:1}45%{opacity:1}47%{opacity:.4}49%{opacity:1}72%{opacity:1}74%{opacity:.55}76%{opacity:1}}
 
+/* ---- light / dark theme switch ---- */
+.theme-toggle{position:fixed;top:14px;right:14px;z-index:1200;
+  display:inline-flex;align-items:center;gap:8px;
+  font:inherit;font-size:12.5px;font-weight:700;line-height:1;
+  padding:9px 14px;border-radius:999px;cursor:pointer;
+  background:var(--panel2);color:var(--ink);border:1px solid var(--grid);
+  box-shadow:var(--shadow);transition:.15s}
+.theme-toggle:hover{border-color:var(--accent);color:var(--head-ink)}
+.theme-toggle svg{display:block;flex-shrink:0}
+.theme-toggle .ico-moon{display:none}
+html[data-theme="light"] .theme-toggle .ico-sun{display:none}
+html[data-theme="light"] .theme-toggle .ico-moon{display:block}
+@media(max-width:560px){.theme-toggle{padding:9px 11px}.theme-toggle .lbl{display:none}}
+/* chart labels follow the theme (CSS beats the fill attribute) */
+svg text[fill="#9aa3c0"]{fill:var(--chart-label)}
+/* keep grid lines visible in every section, light and dark */
+.chartwrap{border:1px solid var(--grid);border-radius:10px;padding:12px;background:var(--chip-bg)}
+input[type=date]{border-color:var(--grid)!important}
+.readas-select{font:inherit;font-size:12.5px;font-weight:700;padding:6px 8px;border-radius:7px;
+  border:1px solid var(--grid);background:var(--field-bg);color:var(--ink);cursor:pointer;max-width:100%}
+.readas-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,183,3,.15)}
+
 </style>
+<script>
+/* apply the saved theme before first paint so there is no flash */
+(function(){try{var t=localStorage.getItem('ji_recon_theme');
+  if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
 </head>
 <body>
+
+<button class="theme-toggle" id="themeBtn" type="button" aria-label="Switch between light and dark theme">
+  <svg class="ico ico-sun" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+    <circle cx="12" cy="12" r="4.2" fill="currentColor"></circle>
+    <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M12 1.6v3.2M12 19.2v3.2M1.6 12h3.2M19.2 12h3.2M4.6 4.6l2.3 2.3M17.1 17.1l2.3 2.3M19.4 4.6l-2.3 2.3M6.9 17.1l-2.3 2.3"></path>
+    </g>
+  </svg>
+  <svg class="ico ico-moon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+    <path d="M20.6 14.7A8.6 8.6 0 1 1 9.3 3.4a7 7 0 0 0 11.3 11.3Z" fill="currentColor"></path>
+  </svg>
+  <span class="lbl" id="themeLbl">Light</span>
+</button>
 
 <div id="loginScreen">
   <div class="login-card">
@@ -260,12 +348,17 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
     if (!d) return '';
     if (typeof d === 'string') {
       var s = d.trim();
-      // dd.mm.yyyy
-      var m = s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);
+      // dd.mm.yyyy - matched anywhere in the text (not anchored to the whole
+      // string), so a label or note around the date ("Confirmed: 12.05.2026",
+      // "12.05.2026 - tentative") still resolves instead of being discarded.
+      var m = s.match(/(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})/);
       if (m) return m[3] + '-' + pad(m[2]) + '-' + pad(m[1]);
       // m/d/yyyy
       var m2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
       if (m2) return m2[3] + '-' + pad(m2[1]) + '-' + pad(m2[2]);
+      // yyyy-mm-dd, also matched anywhere in the text for the same reason.
+      var m3 = s.match(/(\d{4})[.\/-](\d{1,2})[.\/-](\d{1,2})/);
+      if (m3) return m3[1] + '-' + pad(m3[2]) + '-' + pad(m3[3]);
       return s;
     }
     if (d instanceof Date && !isNaN(d)) {
@@ -302,53 +395,115 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
    * (dates replaced by numbers or other non-date text).
    */
 
-  // True for blank, a plain number, or a string that is a number once
-  // common currency/formatting noise (Rs, INR, commas) is stripped.
+  // True for blank, a plain number, or a string that is a number once light
+  // formatting noise around it - a currency symbol/word, thousands commas,
+  // parentheses for a negative, a trailing unit word - is stripped. Letters
+  // directly touching the digits (a plant code such as "PL01") still fail
+  // this, same as before; only recognised noise around a real number passes.
   function looksNumericLike(v) {
     if (v == null || v === '') return true;
     if (typeof v === 'number') return isFinite(v);
     var s = String(v).trim();
     if (!s) return true;
-    var stripped = s.replace(/^(rs\.?|inr|usd|eur|₹)\s*/i, '').replace(/,/g, '').trim();
-    return /^-?\d+(\.\d+)?$/.test(stripped);
+    var stripped = s.replace(/,/g, '').trim();
+    return /^\(?\s*(rs\.?|inr|usd|eur|₹)?\s*-?\d+(\.\d+)?\s*(cr|crore|lakh|lac|pcs?|nos?|units?|%)?\s*\)?$/i.test(stripped);
   }
 
   // True for blank, a Date object, an Excel serial in a plausible date range
-  // (roughly year 1968-2064), or a string in dd.mm.yyyy / yyyy-mm-dd style.
+  // (roughly year 1968-2064), or text carrying a dd.mm.yyyy / yyyy-mm-dd
+  // pattern ANYWHERE in it - so a labelled or annotated date cell ("Confirmed:
+  // 12.05.2026") still counts as date-like instead of being flagged as bad.
+  // Words customer exports commonly drop into a date column instead of a
+  // date, meaning "not fixed yet" (Havells' "Schedule" column reads "RFD" -
+  // Request For Date - on lines that have no confirmed date). These are a
+  // normal, expected value on a genuine date column, not a sign of
+  // misalignment, so they are treated the same as blank.
+  var DATE_PLACEHOLDERS = /^(rfd|tbd|tba|n\/?a|nil|none|pending|awaited|asap|-{1,2}|not\s*applicable|not\s*available|na)$/i;
+
   function looksDateLike(v) {
     if (v == null || v === '') return true;
     if (v instanceof Date) return !isNaN(v);
     if (typeof v === 'number') return v >= 25000 && v <= 60000;
     var s = String(v).trim();
     if (!s) return true;
-    return /^\d{1,2}[.\/-]\d{1,2}[.\/-]\d{4}$/.test(s) || /^\d{4}[.\/-]\d{1,2}[.\/-]\d{1,2}$/.test(s);
+    if (DATE_PLACEHOLDERS.test(s)) return true;
+    return /\d{1,2}[.\/-]\d{1,2}[.\/-]\d{4}/.test(s) || /\d{4}[.\/-]\d{1,2}[.\/-]\d{1,2}/.test(s);
   }
 
   // Checks the RAW sheet rows (not the extracted lines) for the field(s) an
   // adapter resolved, so it catches misalignment even on rows the adapter
   // would otherwise skip. Pushes to diag.fatal - same FAIL LOUD contract as
   // the rest of normStatement.
+  // Pass/fail stats for one column against a validator, over its non-blank values.
+  function columnStat(sheet, col, validator) {
+    var total = 0, bad = 0, sample = null;
+    sheet.rows.forEach(function (r) {
+      var v = r[col];
+      if (v == null || v === '') return;
+      total++;
+      if (!validator(v)) { bad++; if (sample == null) sample = v; }
+    });
+    return { total: total, bad: bad, sample: sample };
+  }
+
+  // Auto-recovery for a column that has drifted from its header (the header
+  // row and the data columns have come apart upstream). Scans the sheet's
+  // OTHER columns for one that actually fits the expected shape (numeric /
+  // date), so the run can be auto-corrected and continue instead of stopping.
+  function findBetterColumn(sheet, currentCol, validator) {
+    var best = null;
+    sheet.headers.forEach(function (h) {
+      if (!h || h === currentCol) return;
+      var stat = columnStat(sheet, h, validator);
+      if (stat.total < 3) return;
+      var rate = 1 - stat.bad / stat.total;
+      if (rate >= 0.9 && (!best || rate > best.rate)) best = { col: h, rate: rate };
+    });
+    return best;
+  }
+
+  // Auto-recovery for a pending-type column that resolved but reads zero on
+  // every line (the "read from the wrong place" case). Looks for another
+  // numeric column, not already used by another mandatory field, that
+  // actually carries non-zero values.
+  function findNonZeroNumericColumn(sheet, excludeCols) {
+    var best = null;
+    sheet.headers.forEach(function (h) {
+      if (!h || excludeCols.indexOf(h) >= 0) return;
+      var total = 0, numeric = 0, nonzero = 0;
+      sheet.rows.forEach(function (r) {
+        var v = r[h];
+        if (v == null || v === '') return;
+        total++;
+        if (looksNumericLike(v)) { numeric++; if (num(v) !== 0) nonzero++; }
+      });
+      if (total < 3) return;
+      var numRate = numeric / total, nzRate = nonzero / total;
+      if (numRate >= 0.9 && nzRate >= 0.2 && (!best || nzRate > best.nzRate)) best = { col: h, nzRate: nzRate };
+    });
+    return best;
+  }
+
   function columnSanityCheck(sheet, f, diag, adapterLabel) {
     function check(fieldKey, label, validator, expected) {
       var col = f[fieldKey];
       if (!col) return;
-      var total = 0, bad = 0, sample = null;
-      sheet.rows.forEach(function (r) {
-        var v = r[col];
-        if (v == null || v === '') return;
-        total++;
-        if (!validator(v)) {
-          bad++;
-          if (sample == null) sample = v;
+      var stat = columnStat(sheet, col, validator);
+      if (stat.total >= 3 && stat.bad / stat.total > 0.4) {
+        var fix = findBetterColumn(sheet, col, validator);
+        if (fix) {
+          diag.warn.push('Sheet "' + sheet.name + '" (' + adapterLabel + '): the "' + col + '" column, ' +
+            'mapped to ' + label + ', did not look like ' + expected + '. Auto-corrected: now reading ' +
+            label + ' from "' + fix.col + '" instead (fits on ' + Math.round(fix.rate * 100) +
+            '% of its rows). Please verify this is right.');
+          f[fieldKey] = fix.col;
+        } else {
+          diag.warn.push('Sheet "' + sheet.name + '" (' + adapterLabel + '): the "' + col + '" column, ' +
+            'mapped to ' + label + ', does not look like ' + expected + ' on ' + stat.bad + ' of ' + stat.total +
+            ' non-blank rows - for example "' + txt(stat.sample) + '". Header may be misaligned with the data. ' +
+            'No better column could be found, so this run has continued with "' + col + '" as-is - please verify ' +
+            'the ' + label + ' figures for sheet "' + sheet.name + '".');
         }
-      });
-      if (total >= 3 && bad / total > 0.4) {
-        diag.fatal.push('Sheet "' + sheet.name + '" (' + adapterLabel + '): the "' + col + '" column, ' +
-          'mapped to ' + label + ', does not look like ' + expected + ' on ' + bad + ' of ' + total +
-          ' non-blank rows - for example "' + txt(sample) + '". Header misaligned: the header row and ' +
-          'the data columns have drifted apart (most likely a data column was removed upstream without ' +
-          'shifting the header row to match). Fix the source export and re-run - this file has NOT been ' +
-          'used to produce any numbers.');
       }
     }
     check('rate', 'Net Price', looksNumericLike, 'numeric values (text such as a plant code was found instead)');
@@ -374,6 +529,22 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
     for (var i = 0; i < names.length; i++) {
       var c = canon(names[i]);
       if (c in hidx) return hidx[c];
+    }
+    return null;
+  }
+
+  // Fallback for resolve(): substring-containment match, either direction, used
+  // only when the exact canonical match fails. Covers a renamed/reworded header
+  // (e.g. "Cust. PO Number" for "Cust PO No") without matching unrelated columns
+  // - the candidate name must be at least 4 canonical characters long.
+  function resolveFuzzy(hidx, names) {
+    var keys = Object.keys(hidx);
+    for (var i = 0; i < names.length; i++) {
+      var c = canon(names[i]);
+      if (c.length < 4) continue;
+      for (var j = 0; j < keys.length; j++) {
+        if (keys[j].indexOf(c) >= 0 || c.indexOf(keys[j]) >= 0) return hidx[keys[j]];
+      }
     }
     return null;
   }
@@ -533,9 +704,10 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
       if (!f[k]) missing.push(k + ' (looked for: ' + adapter.fields[k].join(' / ') + ')');
     });
     if (missing.length) {
-      diag.fatal.push('Sheet "' + sheet.name + '" was read as ' + adapter.label +
+      diag.warn.push('Sheet "' + sheet.name + '" was read as ' + adapter.label +
         ' but these required columns were not found: ' + missing.join('; ') +
-        '. Columns present: ' + sheet.headers.join(', '));
+        '. Columns present: ' + sheet.headers.join(', ') + '. This sheet has been skipped - ' +
+        'the rest of the reconciliation continues without it.');
       return null;
     }
 
@@ -582,11 +754,19 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
       var anyPending = lines.some(function (l) { return l.pending !== 0; });
       var anyQty = lines.some(function (l) { return l.poQty !== 0; });
       if (!anyPending && anyQty) {
-        diag.fatal.push('Sheet "' + sheet.name + '" (' + adapter.label + '): the pending column "' +
-          f.pending + '" is zero or blank on all ' + lines.length +
-          ' lines while order quantities are present. That is not a real reconciliation result - ' +
-          'the column has almost certainly been read from the wrong place. Run stopped.');
-        return null;
+        var pendFix = findNonZeroNumericColumn(sheet, [f.pending, f.poQty, f.rate, f.git].filter(Boolean));
+        if (pendFix) {
+          diag.warn.push('Sheet "' + sheet.name + '" (' + adapter.label + '): the pending column "' +
+            f.pending + '" was zero or blank on all ' + lines.length + ' lines while order quantities are ' +
+            'present. Auto-corrected: now reading pending from "' + pendFix.col + '" instead. Please verify this is right.');
+          lines.forEach(function (l) { l.pending = num(l.raw[pendFix.col]); });
+          f.pending = pendFix.col;
+        } else {
+          diag.warn.push('Sheet "' + sheet.name + '" (' + adapter.label + '): the pending column "' +
+            f.pending + '" is zero or blank on all ' + lines.length +
+            ' lines while order quantities are present, and no better column could be found. Continuing ' +
+            'anyway - this sheet\'s pending figures should be verified manually.');
+        }
       }
     }
 
@@ -623,8 +803,19 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
       netInv: resolve(D, ['NetInvoiceQty']), remarks: resolve(D, ['Remarks']),
       status: resolve(D, ['SOStatus'])
     };
+    var dcAliases = { po: ['Cust PO No'], custItem: ['Customer ItemCode'], openQty: ['OpenSOQty'], status: ['SOStatus'] };
     ['po', 'custItem', 'openQty', 'status'].forEach(function (k) {
-      if (!dc[k]) diag.fatal.push('The "dis" export is missing a required column (' + k + ').');
+      if (!dc[k]) {
+        var alt = resolveFuzzy(D, dcAliases[k]);
+        if (alt) {
+          dc[k] = alt;
+          diag.warn.push('The "dis" export: required column "' + k + '" was not found by its usual name - ' +
+            'auto-corrected to "' + alt + '" (loose match). Please verify this is right.');
+        } else {
+          diag.warn.push('The "dis" export is missing a required column (' + k + '). Continuing without it - ' +
+            'figures that depend on it may be blank or zero.');
+        }
+      }
     });
 
     var S = indexHeaders(sod.headers);
@@ -805,15 +996,14 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
       var nm = nearMiss(sheet.headers, sheet.rows.length);
       if (!nm) return;
       if (nm.adapter) {
-        diag.fatal.push('Sheet "' + sheet.name + '" looks like the ' + nm.adapter.label +
+        diag.warn.push('Sheet "' + sheet.name + '" looks like the ' + nm.adapter.label +
           ' statement (it has ' + nm.hit.join(', ') + ') but is missing the required column(s): ' +
-          nm.missing.join(', ') + '. It would otherwise have been skipped and left out of the ' +
-          'reconciliation entirely. Fix the export header, or rename the column back.');
+          nm.missing.join(', ') + '. It has been left out of the reconciliation - fix the export header, ' +
+          'or rename the column back, to include it next time.');
       } else {
-        diag.fatal.push('Sheet "' + sheet.name + '" carries a PO column and ' + sheet.rows.length +
-          ' rows but matches no known statement format, so it would have been left out of the ' +
-          'reconciliation entirely. Headers found: ' + sheet.headers.slice(0, 14).join(', ') +
-          '. Add an adapter for this layout, or remove the sheet if it is not a statement.');
+        diag.warn.push('Sheet "' + sheet.name + '" carries a PO column and ' + sheet.rows.length +
+          ' rows but matches no known statement format, so it has been left out of the reconciliation. ' +
+          'Headers found: ' + sheet.headers.slice(0, 14).join(', ') + '.');
       }
     });
     if (diag.fatal.length) return { ok: false, diag: diag };
@@ -1581,7 +1771,9 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
       out=document.getElementById('out'), runBtn=document.getElementById('runBtn'),
       resetBtn=document.getElementById('resetBtn'), asOn=document.getElementById('asOn');
 
-  var state={refs:{},statements:[],refLog:[],rows:[],unknown:[]};
+  var state={refs:{},statements:[],refLog:[],unknown:[],autofix:[],sheets:[]};
+  var REF_IDS=['sod','dis','bp','price'];
+  var STATEMENT_IDS=E.ADAPTERS.map(function(a){return a.id;});
   asOn.value = new Date().toISOString().slice(0,10);
 
   drop.addEventListener('click',function(){fileInput.click();});
@@ -1591,15 +1783,68 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
   fileInput.addEventListener('change',function(){handle(fileInput.files);});
   resetBtn.addEventListener('click',function(){location.reload();});
 
+  // Scores how likely a row is to be the REAL header row, so a title/banner
+  // row above it (common in dynamic exports) doesn't get mistaken for headers.
+  function scoreHeaderRow(headers,name,dataRowCount){
+    if(E.identify(headers)) return 1000;
+    if(E.identifyRef(headers,name)) return 900;
+    var nm=E.nearMiss(headers,dataRowCount);
+    if(nm&&nm.hit&&nm.hit.length) return 100+nm.hit.length*10;
+    if(!headers.length) return -1;
+    var nonEmpty=0,textish=0;
+    headers.forEach(function(h){
+      if(h===''||h==null) return;
+      nonEmpty++;
+      if(isNaN(Number(h))) textish++;
+    });
+    return (nonEmpty/headers.length)+(textish/headers.length)*0.5;
+  }
+
   function readSheet(wb,name,file){
     var ws=wb.Sheets[name];
     var aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true,blankrows:false});
     if(!aoa.length) return null;
-    var headers=aoa[0].map(function(h){return h==null?'':String(h);});
-    var rows=aoa.slice(1).map(function(r){
+
+    // Auto-detect the real header row: a dynamic export sometimes carries a
+    // title/banner row (or a stray blank row) above the actual column
+    // headers, which otherwise makes every column below unresolvable.
+    var maxScan=Math.min(aoa.length-1,15);
+    var bestIdx=0,bestScore=-Infinity;
+    for(var i=0;i<=maxScan;i++){
+      var cand=aoa[i].map(function(h){return h==null?'':String(h).trim();});
+      var sc=scoreHeaderRow(cand,name,aoa.length-i-1);
+      if(sc>bestScore){bestScore=sc;bestIdx=i;}
+    }
+
+    var headers=aoa[bestIdx].map(function(h){return h==null?'':String(h).trim();});
+    // Guard against blank or duplicate header names silently overwriting each
+    // other's data when rows are turned into name-keyed objects below - the
+    // FIRST occurrence of a name is left untouched (that's the one column
+    // resolution matches against), later ones get a distinguishing suffix
+    // instead of clobbering the earlier column's values.
+    var seenH={};
+    headers=headers.map(function(h,i){
+      var base=h===''?('(blank col '+(i+1)+')'):h;
+      if(!(base in seenH)){seenH[base]=1;return base;}
+      seenH[base]++;
+      return base+' ('+seenH[base]+')';
+    });
+
+    var rows=aoa.slice(bestIdx+1).map(function(r){
       var o={}; headers.forEach(function(h,i){o[h]=r[i]===undefined?null:r[i];}); return o;
     });
-    return {name:name,file:file,headers:headers,rows:rows};
+    var s={name:name,file:file,headers:headers,rows:rows};
+    if(bestIdx>0) s.headerRowSkipped=bestIdx;
+    return s;
+  }
+
+  // What a sheet auto-classifies as: {kind:'statement'|'reference'|null, value:adapter-id|ref-id|null}
+  function classifyDetect(s){
+    var a=E.identify(s.headers);
+    if(a) return {kind:'statement', value:a.id};
+    var r=E.identifyRef(s.headers,s.name);
+    if(r) return {kind:'reference', value:r};
+    return {kind:null, value:null};
   }
 
   function handle(files){
@@ -1615,14 +1860,12 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
           wb.SheetNames.forEach(function(n){
             var s=readSheet(wb,n,f.name);
             if(!s||!s.headers.length) return;
-            var a=E.identify(s.headers);
-            if(a){ s.adapter=a; state.statements.push(s);
-                   state.rows.push({file:f.name,sheet:n,as:a.label,kind:'statement',n:s.rows.length}); return; }
-            var r=E.identifyRef(s.headers,n);
-            if(r){ state.refs[r]=s; state.refLog.push({id:r,text:f.name+' › '+n+'  -  '+s.rows.length+' rows'});
-                   state.rows.push({file:f.name,sheet:n,as:r,kind:'reference',n:s.rows.length}); return; }
-            state.unknown.push(s);
-            state.rows.push({file:f.name,sheet:n,as:'not recognised',kind:'skip',n:s.rows.length});
+            if(s.headerRowSkipped) state.autofix.push(f.name+' › '+n+': header row auto-detected at row '+
+              (s.headerRowSkipped+1)+' ('+s.headerRowSkipped+' row(s) above it were skipped as title/blank rows).');
+            state.sheets.push({
+              id:'sh'+(state.sheets.length+1), file:f.name, sheet:n, s:s, n:s.rows.length,
+              detected:classifyDetect(s), current:'auto'
+            });
           });
         }catch(err){ show('bad','Could not read '+f.name, String(err&&err.message||err)); }
         if(--pending===0) render();
@@ -1631,17 +1874,68 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
     });
   }
 
+  // What a sheet is actually read as right now: 'auto' follows detection,
+  // 'skip' forces it out, anything else is a manual override chosen in the
+  // "Read as" dropdown.
+  function effectiveValue(entry){
+    if(entry.current==='auto') return entry.detected.value;
+    if(entry.current==='skip') return null;
+    return entry.current;
+  }
+
+  function rebuild(){
+    state.refs={}; state.statements=[]; state.refLog=[]; state.unknown=[];
+    state.sheets.forEach(function(entry){
+      var v=effectiveValue(entry);
+      if(!v){ state.unknown.push(entry.s); return; }
+      if(REF_IDS.indexOf(v)>=0){
+        state.refs[v]=entry.s;
+        state.refLog.push({id:v, text:entry.file+' › '+entry.sheet+'  -  '+entry.n+' rows'});
+      }else{
+        var adapter=E.ADAPTERS.filter(function(a){return a.id===v;})[0];
+        entry.s.adapter=adapter;
+        state.statements.push(entry.s);
+      }
+    });
+  }
+
+  function readAsOptions(entry){
+    var autoTxt=entry.detected.value?('(auto) → '+entry.detected.value):'(auto) → not recognised';
+    var html='<option value="auto"'+(entry.current==='auto'?' selected':'')+'>'+esc(autoTxt)+'</option>';
+    html+='<optgroup label="Reference">';
+    REF_IDS.forEach(function(id){
+      html+='<option value="'+id+'"'+(entry.current===id?' selected':'')+'>'+id+'</option>';
+    });
+    html+='</optgroup><optgroup label="Statement">';
+    STATEMENT_IDS.forEach(function(id){
+      html+='<option value="'+id+'"'+(entry.current===id?' selected':'')+'>'+id+'</option>';
+    });
+    html+='</optgroup>';
+    html+='<option value="skip"'+(entry.current==='skip'?' selected':'')+'>skip / not recognised</option>';
+    return html;
+  }
+
   function render(){
     filesPanel.classList.remove('hide');
+    rebuild();
     var need=['sod','dis','bp'];
-    var html='<tr><th>File</th><th>Sheet</th><th>Read as</th><th class="num">Rows</th></tr>';
-    state.rows.forEach(function(r){
-      var cls=r.kind==='statement'?'t-ok':(r.kind==='reference'?'t-warn':'t-bad');
-      html+='<tr><td class="small">'+esc(r.file)+'</td><td>'+esc(r.sheet)+'</td>'+
-            '<td><span class="tag '+cls+'">'+esc(r.as)+'</span></td>'+
-            '<td class="num">'+r.n.toLocaleString('en-IN')+'</td></tr>';
+    var html='<tr><th>File</th><th>Sheet</th><th class="num">Rows</th><th>Read as</th><th>Detected</th></tr>';
+    state.sheets.forEach(function(entry){
+      var det=entry.detected;
+      var detCls=det.kind==='statement'?'t-ok':(det.kind==='reference'?'t-warn':'t-bad');
+      var detLabel=det.value||'not recognised';
+      html+='<tr><td class="small">'+esc(entry.file)+'</td><td>'+esc(entry.sheet)+'</td>'+
+            '<td class="num">'+entry.n.toLocaleString('en-IN')+'</td>'+
+            '<td><select class="readas-select" id="sel-'+entry.id+'">'+readAsOptions(entry)+'</select></td>'+
+            '<td><span class="tag '+detCls+'">'+esc(detLabel)+'</span></td></tr>';
     });
     filesTable.innerHTML=html;
+    state.sheets.forEach(function(entry){
+      var el=document.getElementById('sel-'+entry.id);
+      if(el) el.addEventListener('change',function(){ entry.current=el.value; render(); });
+    });
+    out.innerHTML='';
+    state.autofix.forEach(function(m){ show('warn','Auto-fixed on read',m); });
     var missing=need.filter(function(k){return !state.refs[k];});
     if(missing.length) show('warn','Still missing: '+missing.join(', '),
       'Add the workbook or files containing those sheets before running.');
@@ -1837,6 +2131,30 @@ code{background:var(--info-bg);color:#9dc0ff;border:1px solid var(--info-line);p
       passEl.value=''; passEl.focus();
     }
   });
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  // Light / dark switch. Presentation only - it flips a data-theme attribute
+  // on <html> and remembers the choice. No reconciliation logic is touched.
+  var root=document.documentElement,
+      btn=document.getElementById('themeBtn'),
+      lbl=document.getElementById('themeLbl');
+  function current(){ return root.getAttribute('data-theme')==='light'?'light':'dark'; }
+  function paint(){
+    var light=current()==='light';
+    lbl.textContent = light?'Dark':'Light';
+    btn.title = light?'Switch to dark theme':'Switch to light theme';
+    btn.setAttribute('aria-pressed', light?'true':'false');
+  }
+  btn.addEventListener('click',function(){
+    var next = current()==='light'?'dark':'light';
+    root.setAttribute('data-theme',next);
+    try{ localStorage.setItem('ji_recon_theme',next); }catch(e){}
+    paint();
+  });
+  paint();
 })();
 </script>
 <style>@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}</style>
